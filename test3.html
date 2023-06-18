@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quad Polygon with Vertex Shading</title>
+  <style>
+    canvas {
+      border: 1px solid #000;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="400"></canvas>
+
+  <script>
+    // Get a reference to the canvas element
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function drawQuadPolygon(vertices) {
+      // Calculate the color interpolation factors for each vertex
+      const factorX1 = (vertices[1].x - vertices[0].x) / (vertices[1].x - vertices[0].x + vertices[3].x - vertices[2].x);
+      const factorX2 = 1 - factorX1;
+
+      // Calculate the color interpolation factors for each row
+      const factorY1 = (vertices[3].y - vertices[0].y) / (vertices[3].y - vertices[0].y + vertices[2].y - vertices[1].y);
+      const factorY2 = 1 - factorY1;
+
+      // Loop through each row
+      for (let y = vertices[0].y; y <= vertices[3].y; y++) {
+        // Calculate the interpolated colors for the left and right edges of the row
+        const colorLeft = interpolateColor(vertices[0].color, vertices[3].color, (y - vertices[0].y) / (vertices[3].y - vertices[0].y));
+        const colorRight = interpolateColor(vertices[1].color, vertices[2].color, (y - vertices[1].y) / (vertices[2].y - vertices[1].y));
+
+        // Loop through each pixel in the row
+        for (let x = vertices[0].x; x <= vertices[1].x; x++) {
+          // Calculate the interpolated color for the current pixel
+          const color = interpolateColor(colorLeft, colorRight, (x - vertices[0].x) / (vertices[1].x - vertices[0].x));
+
+          // Set the pixel color
+          ctx.fillStyle = color;
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+
+    // Helper function to interpolate colors
+    function interpolateColor(color1, color2, factor) {
+      const r = Math.round(color1[0] + factor * (color2[0] - color1[0]));
+      const g = Math.round(color1[1] + factor * (color2[1] - color1[1]));
+      const b = Math.round(color1[2] + factor * (color2[2] - color1[2]));
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+    // Define the vertices for the quad polygon
+const vertices = [
+  { x: 50, y: 50, color: [255, 0, 0] },      // top-left vertex (red)
+  { x: 200, y: 50, color: [0, 255, 0] },      // top-right vertex (green)
+  { x: 200, y: 200, color: [0, 0, 255] },     // bottom-right vertex (blue)
+  { x: 50, y: 200, color: [255, 255, 0] }     // bottom-left vertex (yellow)
+];
+
+    // Call the drawQuadPolygon function to render the quad polygon
+    drawQuadPolygon(vertices);
+  </script>
+</body>
+</html>
+
