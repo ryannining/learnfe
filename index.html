@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>3D Sphere</title>
+        <style></style>
+    </head>
+    <body>
+        Day<input id=lv type=text value="75">
+        <button onclick="go1()">Update</button>
+        <Br>
+        Rotasi<input id=mn type=text value=180>
+        <button onclick="go2()">Update</button>
+        <table>
+            <tr>
+                <td>Kutub Utara
+                <td>
+                    Selatan
+
+                    <tr style="background:#000000">
+                        <td colspan=2>
+                            <canvas id=c1>
+                                <tr>
+                                    <td colspan=2>
+                                        Spherical Equidistant<br>
+Kec rotasi <input type=text value="0.2" id=kc><button onclick="go3()">Animasikan</button>
+                                        <span id=info></span>
+        </table>
+        <script src="image.js"></script>
+        <script>
+            const canvas = document.getElementById('c1');
+            const ctx = canvas.getContext('2d');
+            // Image data for direct pixel manipulation
+            // Set canvas size
+            canvas.width = 400;
+            canvas.height = 400;
+            const canvasSize = 400;
+            const imageData = ctx.createImageData(canvasSize, canvasSize);
+            const data = new Uint8ClampedArray(imageData.data.buffer);
+
+            //document.body.appendChild(canvas);
+
+            function putPixel(pixelX, pixelY, intensity) {
+                // Map projection coordinates to image data index
+                const index = (Math.floor(pixelY) * canvasSize + Math.floor(pixelX)) * 4;
+
+                // Set pixel color with light intensity
+                data[index] = intensity;
+                // Red channel
+                data[index + 1] = intensity;
+                // Green channel
+                data[index + 2] = intensity;
+                // Blue channel
+                data[index + 3] = 255;
+                // Alpha channel
+            }
+            function putPixel2(x, y, i) {
+                putPixel(x, y, i);
+                putPixel(x - 1, y, i);
+                putPixel(x + 1, y, i);
+                putPixel(x, y - 1, i);
+                putPixel(x, y + 1, i);
+
+            }
+            function loadProjC(pos) {
+                let val = 0;
+                let cnt = 0;
+                for (let x = -3; x < 3; x++) {
+                    for (let y = -3; y < 3; y++) {
+                        let v = projC[pos[0] + x];
+                        if (v == undefined)
+                            continue;
+                        v = v[pos[1] + y];
+                        if (v == undefined)
+                            continue;
+                        val += v;
+                        cnt++;
+                        if (cnt > 3)
+                            return val / cnt;
+                    }
+                }
+                if (cnt)
+                    return val / cnt;
+                else
+                    return 0;
+            }
+            function gemapPutPixel(x, y, i) {
+                //i = Math.pow(i / 255, 0.8) * 555 ;
+                i=i/255.0;
+                let ir = Math.pow(i, 0.8) * 355 + 5;
+                let ig = Math.pow(i, 0.8) * 355 + 5;
+                let ib = Math.pow(i, 0.8) * 355 + 5;
+                const tindex = (Math.floor(y) * radius * 4 + Math.floor(x)) * 4;
+                const index = (Math.floor(y) * canvasSize + Math.floor(x)) * 4;
+                data[index] = (t2data[tindex] * ib) >> 8;
+                // Red channel
+                data[index + 1] = (t2data[tindex + 1] * ig) >> 8;
+                // Green channel
+                data[index + 2] = (t2data[tindex + 2] * ir) >> 8;
+                // Blue channel
+                data[index + 3] = 255;
+                // Alpha channel
+            }
+            function femapPutPixel(x, y, pos) {
+                let i = loadProjC(pos) / 255.0;
+                let ir = Math.pow(i, 0.8) * 355 + 5;
+                let ig = Math.pow(i, 0.8) * 355 + 5;
+                let ib = Math.pow(i, 0.8) * 355 + 5;
+                let r=0.8;
+                const tindex = (Math.floor(pos[1] + radius) * radius * 2 + Math.floor(pos[0] + radius)) * 4;
+                const index = (Math.floor(y) * canvasSize + Math.floor(x)) * 4;
+                data[index] = (tdata[tindex] * ib) >> 8;
+                // Red channel
+                data[index + 1] = (tdata[tindex + 1] * ig) >> 8;
+                // Green channel
+                data[index + 2] = (tdata[tindex + 2] * ir) >> 8;
+                // Blue channel
+                data[index + 3] = 255;
+                // Alpha channel
+            }
+            // Sphere properties
+            const radius = 100;
+            const pixelSize = 1;
+            dayofyear = 0;
+            // Light properties
+            var lightDirection = [-0, 0, 1];
+            var lightDirection2 = [-0, 0, 1];
+            // Directional light direction
+            const lightIntensity = 2;
+            const lightIntensity2 = 0.01;
+            // Light intensity
+
+            // Sphere rotation
+            let rotation = 0;
+
+            //ctx.drawImage(image, 0, 0,radius*2,radius*2);
+            // Get the image data
+            let tData = ctx.getImageData(0, 0, radius * 2, radius * 2);
+            let tdata = tData.data;
+
+            // Function to convert degrees to radians
+            function degreesToRadians(degrees) {
+              return (degrees * Math.PI) / 180;
+            }
+
+            // Function to project a point on the sphere onto the circular map
+            function projectPoint(latitude, longitude,r) {
+              r*=0.75;
+              const phi = degreesToRadians(90 - latitude);
+              const theta = degreesToRadians(longitude);
+
+              const x = r*radius * Math.sin(phi) * Math.cos(theta);
+              const y = -r*radius * Math.sin(phi) * Math.sin(theta);
+
+              return { x, y };
+            }
+            let kabaPos=projectPoint(21.4225,39.8262,0.5);
+            let sunPosition=[0,0,0];
+            let moonPosition=[0,0,0];
+            let lightDirection3=[];
+            function calculateSunMoonPosition(dayOfYear) {
+              
+              const a=moonLongitude = +
+                218.3161 -210+
+                13.1763966 * dayOfYear +
+                0.037 * Math.sin(degreesToRadians(0.9856 * (dayOfYear - 2)));
+              const moonDeclination = 5 * Math.sin(degreesToRadians(0.9856 * (dayOfYear - 2)));
+              moonLongitude+=-rotation*180/Math.PI;
+              // project sun to Circular Equidistant
+              moonPosition = projectPoint(moonDeclination, moonLongitude,0.5);
+              // Calculate the light Vector from moon
+              let phi = degreesToRadians(moonDeclination);
+              let theta = degreesToRadians(moonLongitude);
+
+              let x = Math.cos(phi) * Math.cos(theta);
+              let y = Math.cos(phi) * Math.sin(theta);
+              let z = Math.sin(phi);
+
+              lightDirection2= [ x, -y, z ];
+                            
+              dayOfYear+=rotation/(2*Math.PI);
+              
+              let eclipticLongitude =
+                280.46 -210+
+                0.9856474 * dayOfYear +
+                1.915 * Math.sin(degreesToRadians(0.9856 * (dayOfYear - 2)));
+
+              let sunDeclination = 23.45 * Math.sin(degreesToRadians(0.9856 * (dayOfYear - 2)));
+              
+              // Calculate the light Vector from sun
+              phi = degreesToRadians(sunDeclination);
+              theta = degreesToRadians(180+eclipticLongitude+a+rotation*7/Math.PI);
+
+              x = Math.cos(phi) * Math.cos(theta);
+              y = Math.cos(phi) * Math.sin(theta);
+              z = Math.sin(phi);
+
+              lightDirection3= [ x, -y, z ];
+
+              // add earth rotation
+              eclipticLongitude -=rotation*180/Math.PI;
+
+              // project sun to Circular Equidistant
+              sunPosition = projectPoint(sunDeclination, eclipticLongitude,0.5);
+              
+              // Calculate the light Vector from sun
+               theta = degreesToRadians(eclipticLongitude);
+
+               x = Math.cos(phi) * Math.cos(theta);
+               y = Math.cos(phi) * Math.sin(theta);
+               z = Math.sin(phi);
+
+              lightDirection= [ x, -y, z ];
+              
+
+            }
+
+ 
+            // Function to calculate the sun's light vector
+
+
+            // Main function
+            function drawSunMoon(dayOfYear,x,y) {
+              
+
+              // Calculate and draw the moon
+
+              ctx.beginPath();
+              ctx.arc(x+moonPosition.x, y+moonPosition.y, 5, 0, 2 * Math.PI);
+              ctx.fillStyle = 'gray';
+              ctx.fill();
+              
+               //Calculate and draw the sun
+
+              ctx.beginPath();
+              ctx.arc(x+sunPosition.x, y+sunPosition.y, 7, 0, 2 * Math.PI);
+              ctx.fillStyle = 'yellow';
+              ctx.fill();
+              
+              // draw Kabah
+              ctx.beginPath();
+              ctx.arc(x+kabaPos.x, y+kabaPos.y, 2, 0, 2 * Math.PI);
+              ctx.fillStyle = 'blue';
+              ctx.fill();
+              
+              
+
+            }
+
+            // Rendering loop
+            function render() {
+                //projC = [];
+                // Clear canvas
+                //ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // Sphere rotation
+                if (animasikan) {
+                    rotation += kcrot;
+                    if (rotation > 2 * Math.PI) {
+                        rotation = rotation-2 * Math.PI;
+                        dayofyear++;
+                        dayofyear = dayofyear % 365;
+                        go1();
+                    }
+                }
+                calculateSunMoonPosition(dayofyear);
+                // let lightDirection = rotateVector(light, rotation);
+                // Directional light direction
+
+                // Calculate light intensity for each pixel
+                for (let x = -radius; x < radius; x += pixelSize) {
+                    for (let y = -radius; y < radius; y += pixelSize) {
+                        let inr = (x * x + y * y) <= radius * radius;
+                        if (inr) {
+                            // Solve for z coordinate
+                            const z = Math.sqrt(radius * radius - x * x - y * y);
+
+                            // Rotate sphere
+                            let rotated = [x, y, z];
+
+                            // Calculate light intensity
+                            let intensity = 0;
+                            intensity = calculateLightIntensity(rotated, lightDirection, lightIntensity);
+                            intensity += calculateLightIntensity(rotated, lightDirection2, lightIntensity2);
+
+                            // Draw pixel with light intensity
+                            gemapPutPixel(radius + rotated[0], radius + rotated[1], intensity);
+
+                            storeProjC(rotated, intensity);
+
+                            rotated = [x, y, -z];
+
+                            intensity = calculateLightIntensity(rotated, lightDirection, lightIntensity);
+                            intensity += calculateLightIntensity(rotated, lightDirection2, lightIntensity2);
+
+                            gemapPutPixel(radius * 3 - rotated[0], radius + rotated[1], intensity);
+                            storeProjC(rotated, intensity);
+
+                        }
+                    }
+                }
+                for (let x = -radius; x < radius; x += pixelSize) {
+                    for (let y = -radius; y < radius; y += pixelSize) {
+                        let inr = (x * x + y * y) < (radius * radius-1500);
+                        if (inr) {
+                            z = 1;//1800 / ((-y+Math.abs(x*x) + radius) * 5 + 2000);
+                            femapPutPixel(radius + x, radius * 3 + y*z, [x, y]);
+                        }
+
+                    }
+                }
+                // draw moon phase
+                let rmoon=50;
+                for (let x = -rmoon; x < rmoon; x += pixelSize) {
+                    for (let y = -rmoon; y < rmoon; y += pixelSize) {
+                        let inr = (x * x + y * y) <= rmoon * rmoon;
+                        if (inr) {
+                            // Solve for z coordinate
+                            const z = Math.sqrt(rmoon * rmoon - x * x - y * y);
+
+                            // Rotate sphere
+                            let rotated = [-z, x, y];
+
+                            // Calculate light intensity
+                            let intensity = 0;
+                            intensity = 10+calculateLightIntensity(rotated, lightDirection3, lightIntensity);
+
+                            // Draw pixel with light intensity
+                            putPixel(radius*3 + x, radius*3 + y, intensity);
+
+                        }
+                    }
+                }                
+                ctx.putImageData(imageData, 0, 0);
+                // Matahari pura2
+                
+                /*let sun=sphericalToCircularEquidistant([lightDirection[0]*radius,lightDirection[1]*radius,lightDirection[2]*radius]);
+                // Draw sun
+                z = 1;//1800 / ((-sun[1] + radius) * 5 + 2000);
+                ctx.beginPath();
+                ctx.arc(radius+sun[0], radius*3+sun[1]*z, 4, 0, 2 * Math.PI); // Create a circular path
+                ctx.fillStyle = 'yellow'; // Set the fill color
+                ctx.fill(); // Fill the circle with the specified color
+                ctx.closePath();
+                */
+                drawSunMoon(dayofyear,radius,radius*3);
+                requestAnimationFrame(render);
+            }
+
+            // Utility functions
+
+            function normalizeVector(vector) {
+                const length = Math.sqrt(vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]);
+                return [vector[0] / length, vector[1] / length, vector[2] / length];
+            }
+
+            function rotateVector(vector, angle) {
+                const x = vector[0];
+                const y = vector[1];
+                const z = vector[2];
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                const rotatedX = x * cos - y * sin;
+                const rotatedY = x * sin + y * cos;
+                return [rotatedX, rotatedY, z];
+            }
+
+            function calculateLightIntensity(position, direction, intensity) {
+                const dotProduct = position[0] * direction[0] + position[1] * direction[1] + position[2] * direction[2];
+                return Math.max(0, dotProduct) * intensity;
+            }
+
+            function sphericalToCircularEquidistant(position) {
+                const theta = Math.acos(position[2] / radius);
+                const phi = Math.atan2(position[1], position[0]);
+                const r = radius * theta*0.75;
+                const x = r * Math.cos(phi);
+                const y = r * Math.sin(phi);
+                return [x , y ];
+            }
+            var projC = [];
+            function storeProjC(position, i) {
+                const theta = Math.acos(position[2] / radius);
+                const phi = Math.atan2(position[1], position[0]);
+                const r = radius * theta *0.35;
+
+                const x = Math.round(r * Math.cos(phi));
+                const y = Math.round(r * Math.sin(phi));
+                if (projC[x] == undefined)
+                    projC[x] = [];
+                projC[x][y] = i;
+            }
+            
+            animasikan = false;
+            let lv = document.getElementById("lv");
+            let mn = document.getElementById("mn");
+            let kc = document.getElementById("kc");
+            let info = document.getElementById("info");
+	    
+
+            function go1() {
+                if (!animasikan) {
+                    dayofyear = Math.floor(lv.value);
+                    rotation = mn.value * Math.PI * 2 / 360;
+                }
+                rad = Math.PI * 2 * (-23.45 * Math.cos(Math.PI * 2 * ((dayofyear % 365) + 10) / 365)) / 360;
+                light = [1, 0, Math.sin(rad)];
+                info.innerHTML = "Day of year:" + dayofyear + "  Sun Angle:" + Math.round(rad * 360 / (2 * Math.PI), 2);
+            }
+            function go2() {
+                go1();
+            }
+	    let kcrot=0.2;
+            function go3() {
+                if (!animasikan)go1();
+                else {
+                  lv.value=dayofyear;
+                  mn.value=Math.floor(rotation*180/Math.PI);
+                }
+                kcrot=kc.value*1;
+                animasikan = !animasikan;
+                
+            }
+
+            go1();
+            // Start rendering
+            //image.onload = function() {
+            ctx.drawImage(image, 0, 0, radius * 2, radius * 2);
+            // Get the image data
+            tData = ctx.getImageData(0, 0, radius * 2, radius * 2);
+            tdata = tData.data;
+
+            ctx.drawImage(image2, 0, 0, radius * 4, radius * 2);
+            // Get the image data
+            t2Data = ctx.getImageData(0, 0, radius * 4, radius * 2);
+            t2data = t2Data.data;
+
+            render();
+            //}
+        </script>
+    </body>
+</html>
