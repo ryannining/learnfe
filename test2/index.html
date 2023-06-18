@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Solar System Simulation</title>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+  </head>
+  <body>
+    <canvas id='canvas' width=400 height=400></canvas>
+    <script>
+      // JavaScript code for the solar system simulation
+
+      // Set up the scene, camera, and renderer
+      const scene = new THREE.Scene();
+      //const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+      
+   const canvas=document.getElementById('canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight,true);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      
+      var camera = new THREE.OrthographicCamera(
+      -20,
+      20,
+      20,
+      -20,
+      1,
+      1000
+    );
+         
+      renderer.shadowMap.enabled = true;
+      document.body.appendChild(renderer.domElement);
+      camera.aspect = canvas.clientWidth / canvas.clientHeight;
+      camera.updateProjectionMatrix();
+
+      // Create the Earth
+      const earthGeometry = new THREE.SphereGeometry(3, 32, 32);
+      const earthTexture = new THREE.TextureLoader().load('https://th.bing.com/th/id/R.72b2c565b2da6f654e0a3cd574024310?rik=Uu9D9ualw%2f9eqA&riu=http%3a%2f%2ftextures.forrest.cz%2ftextures%2flibrary%2fmaps%2fS_S_Earth-hires.jpg&ehk=n287EF9Pru8cZBAbO8tOwZM3Ja2eMXTrV9oOH5bD8gw%3d&risl=&pid=ImgRaw&r=0');
+      const earthMaterial = new THREE.MeshPhongMaterial({ map: earthTexture });
+
+      const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+
+      // Create the Moon
+      const moonGeometry = new THREE.SphereGeometry(1, 32, 32);
+      const moonTexture = new THREE.TextureLoader().load('https://th.bing.com/th/id/OIP.MI-XGrhk8W6eHPPL79HxywAAAA?pid=ImgDet&rs=1');
+      const moonMaterial = new THREE.MeshPhongMaterial({ map: moonTexture });
+      const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+      scene.add(moon);
+      scene.add(earth);
+
+      // Set the initial positions of the Earth and Moon
+      const earthOrbitRadius = 1050;
+      const moonOrbitRadius =18;
+      const earthSpeed = (20 * Math.PI) / (24 * 60 * 60); // Earth's rotation speed in radians per second
+      const moonSpeed = (120 * Math.PI) / (24 * 60 * 60); // Moon's rotation speed in radians per second
+      let earthAngle = 0;
+      let moonAngle = 0;
+      earth.receiveShadow = true;
+      earth.castShadow=true;
+      moon.receiveShadow = true;
+      moon.castShadow=true;
+
+      // Create the Sun (point light)
+      const sunLight = new THREE.DirectionalLight(0xffffff, 2);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.width = 512;
+      sunLight.shadow.mapSize.height = 512;
+      sunLight.shadow.camera.near = .1;
+      sunLight.shadow.camera.far = 12100;      
+      scene.add(sunLight);
+      // Add ambient light to the scene
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
+      scene.add(ambientLight);
+      function deg2rad(degrees) {
+        return (degrees * Math.PI) / 180;
+      }
+
+      // Set up the animation loop
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // Update the positions of the Earth and Moon
+        earth.position.x = earthOrbitRadius * Math.cos(earthAngle);
+        earth.position.y = earthOrbitRadius * Math.sin(earthAngle);
+
+        moon.position.x = earth.position.x + moonOrbitRadius * Math.cos(moonAngle);
+        moon.position.y = earth.position.y + moonOrbitRadius * Math.sin(moonAngle);
+        moon.position.z=1;
+        // Rotate the Earth and Moon
+        earth.rotation.z=deg2rad(0);
+        earth.rotation.x=deg2rad(90);
+        earth.rotation.y += 30*earthSpeed;
+        moon.rotation.x=Math.PI/2;
+        moon.rotation.y += 1.7*moonSpeed;
+
+
+
+        // Position the camera to follow the Earth's position
+        camera.position.x = earth.position.x;// - moonOrbitRadius * Math.cos(moonAngle);
+        camera.position.y = earth.position.y;// - moonOrbitRadius * Math.sin(moonAngle);
+        camera.position.z =70;
+        //camera.lookAt(moon.position);
+
+        // Position the sun light at the center of the scene
+        sunLight.position.set(earth.position.x*0.97, earth.position.y*0.97, Math.cos((earthAngle))*13);
+        sunLight.target = earth;
+        sunLight.updateMatrixWorld();
+        // Increment the angles for the next frame
+        earthAngle += 3*earthSpeed;
+        moonAngle += 2*moonSpeed;
+        renderer.render(scene, camera);
+      }
+
+      // Start the animation loop
+      animate();
+    </script>
+  </body>
+</html>
