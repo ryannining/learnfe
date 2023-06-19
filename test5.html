@@ -210,7 +210,7 @@ camera.position.z=200;
                     let d=i*2*Math.PI/r;
                     let idx=4*(j*canvas.width+Math.floor(i*canvas.width/r));
                     
-                    let idx2=(Math.floor(rc+Math.sin(d)*r1)*canvas2.width+
+                    let idx2=(Math.floor(rc-Math.sin(d)*r1)*canvas2.width+
                          Math.floor(rc+Math.cos(d)*r1))*4;
                     data[idx2]=tdata[idx];
                     data[idx2+1]=tdata[idx+1];
