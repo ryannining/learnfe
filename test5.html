@@ -128,7 +128,7 @@ camera.position.z=200;
                         const latitude = (latIndex / latitudeLines) * 180 - 90;
                         const longitude = (lonIndex / longitudeLines) * 360 - 180;
 
-                        const intensity = 0.95 - calculateSunlightIntensity(latitude, longitude, dayOfYear, timeOfDay);
+                        const intensity = 0.85 - calculateSunlightIntensity(latitude, longitude, dayOfYear, timeOfDay);
 
                         const x = lonIndex * lonIncrement;
                         const y = latIndex * latIncrement;
@@ -194,12 +194,12 @@ camera.position.z=200;
                 ctx.stroke();
 
                 
-                ctx2.fillStyle = '#00F000';
+                ctx2.fillStyle = '#000000';
                 ctx2.fillRect(0, 0, canvas2.width, canvas2.height);
                 const tData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const tdata = tData.data;
-                const imageData = ctx2.createImageData(canvas2.width, canvas2.height);
-                const data = new Uint8ClampedArray(imageData.data.buffer);
+                const imageData = ctx2.getImageData(0,0,canvas2.width, canvas2.height);
+                const data = imageData.data;
                 const rc=canvas2.width/2;
                 cw=Math.floor(canvas2.width*2);
                 for (let sj=0;sj<cw;sj++){
@@ -208,7 +208,7 @@ camera.position.z=200;
                   let r1=r/(2*Math.PI);
                   for (let i=0;i<r;i++){
                     let d=i*2*Math.PI/r;
-                    let idx=4*(j*canvas.width+Math.floor(i*canvas.width/r));
+                    let idx=4*((canvas.height-j)*canvas.width+Math.floor(i*canvas.width/r));
                     
                     let idx2=(Math.floor(rc-Math.sin(d)*r1)*canvas2.width+
                          Math.floor(rc+Math.cos(d)*r1))*4;
