@@ -18,7 +18,8 @@
         </div>
         <canvas id="canvas" width="800" height="400"></canvas>
         <canvas id="equidistantCanvas" width="400" height="400"></canvas>
-        <canvas id="canvas3d" width="400" height="400"></canvas>
+        <canvas id="canvas3d" width="400" height="400"></canvas><br>
+        Draw line from <input id=pos1 value="-7.0276271,110.3904599" size=30> - <input size=30 id=pos2 value="21.4224804,39.8249901">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
         <script src="images2.js"></script>
         <script>
@@ -113,8 +114,9 @@ camera.position.z=200;
                 // Draw latitude and longitude lines
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                sx=-400;  
+                ctx.drawImage(image, sx, -10, canvas.width, canvas.height);
+                ctx.drawImage(image, canvas.width+sx, -10, canvas.width, canvas.height);
                 ctx.lineWidth=1;
 
                 // Draw circles representing sunlight intensity
@@ -178,6 +180,19 @@ camera.position.z=200;
                     }
                 }
 
+                ctx.beginPath();
+                ctx.lineWidth=3;
+                ctx.strokeStyle = 'red';
+                x1=p1[1]*canvas.width/360;
+                y1=canvas.height-(p1[0]+90)*canvas.height/180;
+                x2=p2[1]*canvas.width/360;
+                y2=canvas.height-(p2[0]+90)*canvas.height/180;
+                
+                
+                ctx.moveTo(x1,y1);
+                ctx.lineTo(x2,y2);
+                ctx.stroke();
+
                 
                 ctx2.fillStyle = '#00F000';
                 ctx2.fillRect(0, 0, canvas2.width, canvas2.height);
@@ -227,12 +242,16 @@ camera.position.z=200;
             }
             dayOfYear = 0;
             timeOfDay = 0;
+            p1=[-7.0276271,110.3904599];
+            p2=[21.4224804,39.8249901]
             animasikan=false;
             function go2(){
               animasikan=!animasikan;
               go1();
             }
             function go1() {
+                p1=JSON.parse("["+document.getElementById('pos1').value+"]");
+                p2=JSON.parse("["+document.getElementById('pos2').value+"]");
                 dayOfYear = parseInt(document.getElementById('dayOfYearInput').value);
                 timeOfDay = parseInt(document.getElementById('timeOfDayInput').value);
                 render();
