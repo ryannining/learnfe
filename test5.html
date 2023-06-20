@@ -136,9 +136,9 @@ camera.position.z=200;
                 // Draw latitude and longitude lines
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                rsc=800/canvas.width;
+                //rsc=800/canvas.width;
                 sx=-400*rsc;  
-                sy=-10;
+                sy=-10*rsc;
                 ctx.drawImage(image, sx, sy, canvas.width, canvas.height);
                 ctx.drawImage(image, canvas.width+sx, sy, canvas.width, canvas.height);
                 ctx.lineWidth=1;
