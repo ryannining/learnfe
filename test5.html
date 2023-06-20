@@ -17,26 +17,47 @@
             <button onclick="go1()">Redraw</button><button onclick="go2()">Animasikan</button>
         </div>
         <canvas id="canvas" width="800" height="400"></canvas>
-        <canvas id="equidistantCanvas" width="400" height="400"></canvas>
         <canvas id="canvas3d" width="400" height="400"></canvas><br>
+        <canvas id="equidistantCanvas" width="800" height="800"></canvas>
         Draw line from <input id=pos1 value="-7.0276271,110.3904599" size=30> - <input size=30 id=pos2 value="21.4224804,39.8249901">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
         <script src="images2.js"></script>
         <script>
 
+            const urlParams = new URLSearchParams(window.location.search);
 
+            // Get the value of the 'latitude' parameter
+            let blocksize = urlParams.get('blocksize');
+            let day = urlParams.get('day');
+            if (day){
+              time=day-Math.floor(day);
+              document.getElementById('dayOfYearInput').value = Math.floor(day);
+              document.getElementById('timeOfDayInput').value = (time*24).toFixed(2);
+            }            
+            let swappole = urlParams.get('swappole')=='y';
+            if (!blocksize)blocksize=15;
             
             const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-            const latitudeLines = Math.floor(180 / 15) + 1;
-            // Number of latitude lines
-            const longitudeLines = Math.floor(360 / 15) + 1;
-            // Number of longitude lines
-
+            let rsc=canvas.width;
             const canvas2 = document.getElementById('equidistantCanvas');
+            const canvas3d=document.getElementById('canvas3d');
+            const latitudeLines = Math.floor(180 / blocksize) + 1;
+            // Number of latitude lines
+            const longitudeLines = Math.floor(360 / blocksize) + 1;
+            // Number of longitude lines
+            // Draw circles representing sunlight intensity
+            const latIncrement = Math.floor(canvas.height / latitudeLines);
+            const lonIncrement = Math.floor(canvas.width / longitudeLines);
+            canvas.height=latitudeLines*latIncrement;
+            canvas.width=longitudeLines*lonIncrement;
+            canvas3d.width=canvas.height;
+            canvas3d.height=canvas.height;
+            rsc=canvas.width/rsc;
+            const ctx = canvas.getContext('2d');
+            
+            const tly=swappole?12:canvas.height-12;    
             const ctx2 = canvas2.getContext('2d');
 
-            const canvas3d=document.getElementById('canvas3d');
             const renderer = new THREE.WebGLRenderer({ canvas: canvas3d });
             renderer.setSize(canvas3d.clientWidth, canvas3d.clientHeight,true);
             renderer.setPixelRatio(window.devicePixelRatio);
@@ -103,8 +124,9 @@ camera.position.z=200;
                     atmosphericTransmittance = 1;
                 // Calculate solar radiation
                 const solarRadiation = extraterrestrialRadiation * cosZenithAngle * atmosphericTransmittance;
-
-                return Math.max(0,atmosphericTransmittance * cosZenithAngle) * 3;
+                
+                return [cosZenithAngle,atmosphericTransmittance];
+                //return Math.max(0,atmosphericTransmittance * cosZenithAngle) * 3;
             }
             function updateTexture() {
               texture.needsUpdate = true;
@@ -114,40 +136,42 @@ camera.position.z=200;
                 // Draw latitude and longitude lines
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                sx=-400;  
-                ctx.drawImage(image, sx, -10, canvas.width, canvas.height);
-                ctx.drawImage(image, canvas.width+sx, -10, canvas.width, canvas.height);
+                rsc=800/canvas.width;
+                sx=-400*rsc;  
+                sy=-10;
+                ctx.drawImage(image, sx, sy, canvas.width, canvas.height);
+                ctx.drawImage(image, canvas.width+sx, sy, canvas.width, canvas.height);
                 ctx.lineWidth=1;
 
-                // Draw circles representing sunlight intensity
-                const latIncrement = canvas.height / latitudeLines;
-                const lonIncrement = canvas.width / longitudeLines;
+
 
                 for (let latIndex = 0; latIndex < latitudeLines; latIndex++) {
                     for (let lonIndex = 0; lonIndex < longitudeLines; lonIndex++) {
                         const latitude = (latIndex / latitudeLines) * 180 - 90;
                         const longitude = (lonIndex / longitudeLines) * 360 - 180;
 
-                        const intensity = 0.85 - calculateSunlightIntensity(latitude, longitude, dayOfYear, timeOfDay);
-
+                        const solar = calculateSunlightIntensity(latitude, longitude, dayOfYear, timeOfDay);
+                        const intensity=0.85 - solar[0];
+                        const intensity2=solar[1];
+                        
                         const x = lonIndex * lonIncrement;
                         const y = latIndex * latIncrement;
 
                         const circleSize = Math.min(latIncrement, lonIncrement) / 2;
 
                         ctx.fillStyle = `rgba(0,0,0, ${intensity})`;
-                        ctx.beginPath();
-
-                        //ctx.arc(x + circleSize, y + circleSize, 3, 0, Math.PI * 2);
                         ctx.fillRect(x, y, lonIncrement, latIncrement);
-
+                        //if (intensity2<0.5){
+                        //ctx.fillStyle = `rgba(255,155,0, ${intensity2})`;
+                        //ctx.fillRect(x, y, lonIncrement, latIncrement);
+                        //}
 
                     }
 
                 }
 
                 // Draw latitude lines
-                ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                ctx.strokeStyle = 'rgba(255,255,255,0.02)';
                 ctx.font = '12px Arial';
                 ctx.fillStyle = 'yellow';
                 ctx.lineWidth=0.5;
@@ -175,7 +199,7 @@ camera.position.z=200;
                     ctx.stroke();
                     const longitude = (i / (longitudeLines - 1)) * 360;
                     if (longitude-oldl>=30){
-                      ctx.fillText(`${longitude.toFixed(0)}`, x-10, canvas.height-12);
+                      ctx.fillText(`${longitude.toFixed(0)}`, x-10, tly);
                       oldl=longitude;
                     }
                 }
@@ -208,7 +232,10 @@ camera.position.z=200;
                   let r1=r/(2*Math.PI);
                   for (let i=0;i<r;i++){
                     let d=i*2*Math.PI/r;
-                    let idx=4*((canvas.height-j)*canvas.width+Math.floor(canvas.width-i*canvas.width/r));
+                    let idx=0;
+                    if (swappole)
+                      idx=4*((canvas.height-j)*canvas.width+Math.floor(canvas.width-i*canvas.width/r));
+                    else idx=4*((j)*canvas.width+Math.floor(i*canvas.width/r));
                     
                     let idx2=(Math.floor(rc-Math.sin(d)*r1)*canvas2.width+
                          Math.floor(rc+Math.cos(d)*r1))*4;
