@@ -17,7 +17,8 @@
         <input type=checkbox id=swap> Flip pole on circular equidistant
         <br>Draw line from <input id=pos1 value="-7.0276271,110.3904599" size=30> - <input size=30 id=pos2 value="21.4224804,39.8249901">
         | 3D rotation <input type="range" min="1" max="360" value="50" class="slider" id="rot3d">
-        <br><button onclick="go1()">Redraw</button><button onclick="go2()">Animasikan</button>
+        <br><button onclick="go1()">Redraw</button><button onclick="go2()">Animate</button>
+        Speed <input type="range" min="1" max="100" value="5" class="slider" id="aspeed">
         </div>
         <canvas id="canvas" width="800" height="400"></canvas>
         <canvas id="canvas3d" width="400" height="400"></canvas><br>
@@ -275,7 +276,7 @@ camera.position.z=200;
                 ctx2.fill();
 */                
                 if (animasikan){
-                  timeOfDay += 0.1;
+                  timeOfDay += document.getElementById("aspeed").value/10;
                   if (timeOfDay > 24) {
                       timeOfDay = timeOfDay - 24;
                       dayOfYear += 1;
