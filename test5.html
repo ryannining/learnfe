@@ -23,7 +23,7 @@
             <br>
             <button onclick="go1()">Redraw</button>
             <button onclick="go2()">Animate</button>
-            Speed <input type="range" min="1" max="100" value="1" class="slider" id="aspeed">
+            Speed <input type="range" min="1" max="1000" value="1" class="slider" id="aspeed">
         </div>
         <canvas id="canvas" width="800" height="400"></canvas>
         <canvas id="canvas3d" width="400" height="400"></canvas>
@@ -72,14 +72,16 @@
             canvas2.height = canvas2.width * yscale;
 
             const renderer = new THREE.WebGLRenderer({
-                canvas: canvas3d
+                canvas: canvas3d,
+                antialias: true
             });
 
             renderer.setSize(canvas3d.clientWidth, canvas3d.clientHeight, true);
             renderer.setPixelRatio(window.devicePixelRatio);
 
             const renderer2 = new THREE.WebGLRenderer({
-                canvas: canvas2
+                canvas: canvas2,
+                antialias: true
             });
 
             renderer2.setSize(canvas2.clientWidth, canvas2.clientHeight, true);
@@ -322,7 +324,7 @@
                 */
 
                 if (animasikan) {
-                    timeOfDay += document.getElementById("aspeed").value*24 / 100;
+                    timeOfDay += document.getElementById("aspeed").value*24 / 1000;
                     if (timeOfDay > 24) {
                         timeOfDay = timeOfDay - 24;
                         dayOfYear += 1;
