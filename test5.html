@@ -16,6 +16,7 @@
             <input type="text" id="timeOfDayInput" value="12"/>
         <input type=checkbox id=swap> Flip pole on circular equidistant
         <br>Draw line from <input id=pos1 value="-7.0276271,110.3904599" size=30> - <input size=30 id=pos2 value="21.4224804,39.8249901">
+        | 3D rotation <input type="range" min="1" max="360" value="50" class="slider" id="rot3d">
         <br><button onclick="go1()">Redraw</button><button onclick="go2()">Animasikan</button>
         </div>
         <canvas id="canvas" width="800" height="400"></canvas>
@@ -289,7 +290,7 @@ camera.position.z=200;
                 }
             }
             function render3d(){
-                sphere.rotation.y += 0.01;
+                sphere.rotation.y = document.getElementById("rot3d").value*2*Math.PI/360;
                 camera.position.y=-Math.sin(solarDeclination)*150;
                 camera.lookAt(sphere.position);
                 camera.updateProjectionMatrix();
