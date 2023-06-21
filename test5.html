@@ -20,7 +20,7 @@
         </div>
         <canvas id="canvas" width="800" height="400"></canvas>
         <canvas id="canvas3d" width="400" height="400"></canvas><br>
-        <canvas id="equidistantCanvas" width="800" height="800"></canvas>
+        <canvas id="equidistantCanvas" width="600" height="800"></canvas>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
         <script src="images2.js"></script>
         <script>
@@ -57,8 +57,10 @@
             rsc=canvas.width/rsc;
             const ctx = canvas.getContext('2d');
             
-            const tly=swappole?12:canvas.height-12;    
+            let tly=swappole?12:canvas.height-12;    
             const ctx2 = canvas2.getContext('2d');
+            const yscale=0.7;
+            canvas2.height=canvas2.width*yscale;
 
             const renderer = new THREE.WebGLRenderer({ canvas: canvas3d });
             renderer.setSize(canvas3d.clientWidth, canvas3d.clientHeight,true);
@@ -86,6 +88,9 @@ camera.position.z=200;
 
 
             solarDeclination=0;
+            hourAngle=0;
+            function calculateSunPos(){
+            }
             function calculateSunlightIntensity(latitude, longitude, dayOfYear, timeOfDay) {
                 // Convert latitude and longitude to radians
                 const latitudeRad = latitude * Math.PI / 180;
@@ -99,7 +104,7 @@ camera.position.z=200;
                  solarDeclination = 0.409 * Math.sin(((2 * Math.PI / 365) * dayOfYear) - 1.39);
 
                 // Calculate hour angle
-                const hourAngle = -timeDifference * Math.PI / 180 - longitudeRad + Math.PI;
+                hourAngle = -timeDifference * Math.PI / 180 - longitudeRad + Math.PI;
 
                 // Calculate solar zenith angle
                 const cosZenithAngle = Math.sin(latitudeRad) * Math.sin(solarDeclination) + Math.cos(latitudeRad) * Math.cos(solarDeclination) * Math.cos(hourAngle);
@@ -171,11 +176,17 @@ camera.position.z=200;
                     }
 
                 }
+                ctx.beginPath();
+                ctx.fillStyle='yellow';
+                tt=12-timeOfDay;
+                if (tt<0)tt+=24;
+                ctx.arc(((tt)/24)*canvas.width,(Math.PI/2+ solarDeclination)*canvas.height/(Math.PI),7,0,2*Math.PI);
+                ctx.fill();
 
                 // Draw latitude lines
                 ctx.strokeStyle = 'rgba(255,255,255,0.02)';
                 ctx.font = '12px Arial';
-                ctx.fillStyle = 'yellow';
+                ctx.fillStyle = 'orange';
                 ctx.lineWidth=0.5;
                 let oldl=-250;
                 for (let i = 0; i <= latitudeLines; i++) {
@@ -228,10 +239,13 @@ camera.position.z=200;
                 const data = imageData.data;
                 const rc=canvas2.width/2;
                 cw=Math.floor(canvas2.width*2);
+                let r1=0;
                 for (let sj=0;sj<cw;sj++){
                   let j=Math.floor(sj*canvas.height/(canvas2.width*2));
                   let r=1+cw*1.5*sj/cw;
-                  let r1=r/(2*Math.PI);
+
+                  r1=r/(2*Math.PI);
+                  
                   for (let i=0;i<r;i++){
                     let d=i*2*Math.PI/r;
                     let idx=0;
@@ -239,7 +253,7 @@ camera.position.z=200;
                       idx=4*((canvas.height-j)*canvas.width+Math.floor(canvas.width-i*canvas.width/r));
                     else idx=4*((j)*canvas.width+Math.floor(i*canvas.width/r));
                     
-                    let idx2=(Math.floor(rc-Math.sin(d)*r1)*canvas2.width+
+                    let idx2=(Math.floor(rc*yscale-Math.sin(d)*r1*yscale)*canvas2.width+
                          Math.floor(rc+Math.cos(d)*r1))*4;
                     data[idx2]=tdata[idx];
                     data[idx2+1]=tdata[idx+1];
@@ -249,6 +263,16 @@ camera.position.z=200;
                   }
                 }
                 ctx2.putImageData(imageData, 0, 0);
+/*
+                // sun position
+                js=(-solarDeclination+Math.PI/2)/(Math.PI);
+                
+                let rs=js*r1;
+                ctx2.beginPath();
+                ctx2.fillStyle='yellow';
+                ctx2.arc(Math.cos(hourAngle)*rs+rc,yscale*((swappole?1:-1)*Math.sin(hourAngle)*rs+rc),7,0,2*Math.PI);
+                ctx2.fill();
+*/                
                 if (animasikan){
                   timeOfDay += 0.1;
                   if (timeOfDay > 24) {
@@ -276,7 +300,7 @@ camera.position.z=200;
             timeOfDay = 0;
             p1=[-7.0276271,110.3904599];
             p2=[21.4224804,39.8249901]
-            animasikan=false;
+            animasikan=true;
             function go2(){
               animasikan=!animasikan;
               go1();
@@ -287,6 +311,7 @@ camera.position.z=200;
                 dayOfYear = parseInt(document.getElementById('dayOfYearInput').value);
                 timeOfDay = parseInt(document.getElementById('timeOfDayInput').value);
                 swappole=document.getElementById('swap').checked;
+                tly=swappole?12:canvas.height-12;
                 render();
             }
             image.onload = function() {
