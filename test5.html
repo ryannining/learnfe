@@ -14,16 +14,22 @@
             <input type="text" id="dayOfYearInput" value="100"/>
             <label for="timeOfDayInput">Time of Day (in hours):</label>
             <input type="text" id="timeOfDayInput" value="12"/>
-        <input type=checkbox id=swap> Flip pole on circular equidistant
-        <br>Draw line from <input id=pos1 value="-7.0276271,110.3904599" size=30> - <input size=30 id=pos2 value="21.4224804,39.8249901">
-        | 3D rotation <input type="range" min="1" max="360" value="230" class="slider" id="rot3d">
-        <br><button onclick="go1()">Redraw</button><button onclick="go2()">Animate</button>
-        Speed <input type="range" min="1" max="100" value="5" class="slider" id="aspeed">
+            <input type=checkbox id=swap>
+            Flip pole on circular equidistant
+        <br>
+            Draw line from <input id=pos1 value="-7.0276271,110.3904599" size=30>
+            - <input size=30 id=pos2 value="21.4224804,39.8249901">
+            | 3D rotation <input type="range" min="1" max="360" value="230" class="slider" id="rot3d">
+            <br>
+            <button onclick="go1()">Redraw</button>
+            <button onclick="go2()">Animate</button>
+            Speed <input type="range" min="1" max="100" value="1" class="slider" id="aspeed">
         </div>
         <canvas id="canvas" width="800" height="400"></canvas>
-        <canvas id="canvas3d" width="400" height="400"></canvas><br>
+        <canvas id="canvas3d" width="400" height="400"></canvas>
+        <br>
         <canvas id="equidistantCanvas" width="600" height="800"></canvas>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
         <script src="images2.js"></script>
         <script>
 
@@ -32,19 +38,20 @@
             // Get the value of the 'latitude' parameter
             let blocksize = urlParams.get('blocksize');
             let day = urlParams.get('day');
-            if (day){
-              time=day-Math.floor(day);
-              document.getElementById('dayOfYearInput').value = Math.floor(day);
-              document.getElementById('timeOfDayInput').value = (time*24).toFixed(2);
-            }            
-            let swappole = urlParams.get('swappole')=='y';
-            document.getElementById('swap').checked=swappole;
-            if (!blocksize)blocksize=15;
-            
+            if (day) {
+                time = day - Math.floor(day);
+                document.getElementById('dayOfYearInput').value = Math.floor(day);
+                document.getElementById('timeOfDayInput').value = (time * 24).toFixed(2);
+            }
+            let swappole = urlParams.get('swappole') == 'y';
+            document.getElementById('swap').checked = swappole;
+            if (!blocksize)
+                blocksize = 15;
+
             const canvas = document.getElementById('canvas');
-            let rsc=canvas.width;
+            let rsc = canvas.width;
             const canvas2 = document.getElementById('equidistantCanvas');
-            const canvas3d=document.getElementById('canvas3d');
+            const canvas3d = document.getElementById('canvas3d');
             const latitudeLines = Math.floor(180 / blocksize) + 1;
             // Number of latitude lines
             const longitudeLines = Math.floor(360 / blocksize) + 1;
@@ -52,50 +59,95 @@
             // Draw circles representing sunlight intensity
             const latIncrement = Math.floor(canvas.height / latitudeLines);
             const lonIncrement = Math.floor(canvas.width / longitudeLines);
-            canvas.height=latitudeLines*latIncrement;
-            canvas.width=longitudeLines*lonIncrement;
-            canvas3d.width=canvas.height;
-            canvas3d.height=canvas.height;
-            rsc=canvas.width/rsc;
+            canvas.height = latitudeLines * latIncrement;
+            canvas.width = longitudeLines * lonIncrement;
+            canvas3d.width = canvas.height;
+            canvas3d.height = canvas.height;
+            rsc = canvas.width / rsc;
             const ctx = canvas.getContext('2d');
-            
-            let tly=swappole?12:canvas.height-12;    
-            const ctx2 = canvas2.getContext('2d');
-            const yscale=0.7;
-            canvas2.height=canvas2.width*yscale;
 
-            const renderer = new THREE.WebGLRenderer({ canvas: canvas3d });
-            renderer.setSize(canvas3d.clientWidth, canvas3d.clientHeight,true);
+            let tly = swappole ? 12 : canvas.height - 12;
+            //const ctx2 = canvas2.getContext('2d');
+            const yscale = 0.7;
+            canvas2.height = canvas2.width * yscale;
+
+            const renderer = new THREE.WebGLRenderer({
+                canvas: canvas3d
+            });
+
+            renderer.setSize(canvas3d.clientWidth, canvas3d.clientHeight, true);
             renderer.setPixelRatio(window.devicePixelRatio);
-            
-const scene = new THREE.Scene();
-const texture = new THREE.CanvasTexture(canvas);
-const camera = new THREE.OrthographicCamera(
-  canvas3d.clientWidth / -2,
-  canvas3d.clientWidth / 2,
-  canvas3d.clientHeight / 2,
-  canvas3d.clientHeight / -2,
-  1,
-  1000
-);
-            
-          // Create a sphere
-const sun = new THREE.Mesh(new THREE.SphereGeometry(15, 32, 32),new THREE.MeshBasicMaterial({ color: 0xffd700 }));;
-const geometry = new THREE.SphereGeometry(150, 32, 32);
-const material = new THREE.MeshBasicMaterial({ map: texture });
-const sphere = new THREE.Mesh(geometry, material);
-scene.add(sphere);
-scene.add(sun);
-const ambientLight = new THREE.AmbientLight(0xffffff, 1);
-scene.add(ambientLight);
 
+            const renderer2 = new THREE.WebGLRenderer({
+                canvas: canvas2
+            });
 
+            renderer2.setSize(canvas2.clientWidth, canvas2.clientHeight, true);
+            renderer2.setPixelRatio(window.devicePixelRatio);
 
-            solarDeclination=0;
-            hourAngle=0;
-            function calculateSunPos(){
-              
+            const scene = new THREE.Scene();
+            const scene2 = new THREE.Scene();
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.minFilter = THREE.NearestFilter;
+            const camera = new THREE.OrthographicCamera(canvas3d.clientWidth / -2,canvas3d.clientWidth / 2,canvas3d.clientHeight / 2,canvas3d.clientHeight / -2,1,1000);
+
+            // Create a sphere
+            const sun = new THREE.Mesh(new THREE.SphereGeometry(15,32,32),new THREE.MeshBasicMaterial({
+                color: 0xffd700
+            }));
+            // Create a sphere
+            const sun2 = new THREE.Mesh(new THREE.SphereGeometry(5,32,32),new THREE.MeshBasicMaterial({
+                color: 0xffd700
+            }));            
+            res = 200;
+            let geometry = new THREE.CylinderGeometry(190,190,10,res);
+            //new THREE.SphereGeometry(150,32,32);
+
+            var Uvs = geometry.faceVertexUvs[0];
+            var faceCount = Uvs.length;
+            for (var i = 0; i < res; i++) {
+                var uvs = Uvs[i];
+                uvs[0].y = 0.9;
+                uvs[1].y = 0.9;
+                uvs[2].y = 0.9;
+                var uvs = Uvs[i + res];
+                uvs[0].y = 0.9;
+                uvs[1].y = 0.9;
+                uvs[2].y = 0.9;
+
+                var uvs = Uvs[i + res * 2];
+                uvs[0].x = i / (res);
+                uvs[1].x = (i + 1) / (res);
+                uvs[2].x = (i + 0.5) / (res);
+                uvs[0].y = 0;
+                uvs[1].y = 0;
+                uvs[2].y = 1;
+                var uvs = Uvs[i + res * 3];
+                uvs[0].x = i / (res);
+                uvs[1].x = (i + 1) / (res);
+                uvs[2].x = (i + 0.5) / (res);
+                uvs[0].y = 0;
+                uvs[1].y = 0;
+                uvs[2].y = 1;
             }
+            const material = new THREE.MeshBasicMaterial({
+                map: texture
+            });
+            const flat3d = new THREE.Mesh(geometry,material);
+            geometry = new THREE.SphereGeometry(150,64,64);
+
+            const sphere = new THREE.Mesh(geometry,material);
+            scene.add(sphere);
+            scene.add(sun);
+            scene2.add(flat3d);
+            scene2.add(sun2);
+            const ambientLight = new THREE.AmbientLight(0xffffff,1);
+            scene.add(ambientLight);
+            scene2.add(ambientLight);
+
+            solarDeclination = 0;
+            hourAngle = 0;
+            function calculateSunPos() {}
             function calculateSunlightIntensity(latitude, longitude, dayOfYear, timeOfDay) {
                 // Convert latitude and longitude to radians
                 const latitudeRad = latitude * Math.PI / 180;
@@ -106,7 +158,7 @@ scene.add(ambientLight);
                 // 15 degrees per hour
 
                 // Calculate solar declination angle
-                 solarDeclination = 0.409 * Math.sin(((2 * Math.PI / 365) * dayOfYear) - 1.39);
+                solarDeclination = 0.409 * Math.sin(((2 * Math.PI / 365) * dayOfYear) - 1.39);
 
                 // Calculate hour angle
                 hourAngle = -timeDifference * Math.PI / 180 - longitudeRad + Math.PI;
@@ -136,26 +188,24 @@ scene.add(ambientLight);
                     atmosphericTransmittance = 1;
                 // Calculate solar radiation
                 const solarRadiation = extraterrestrialRadiation * cosZenithAngle * atmosphericTransmittance;
-                
-                return [cosZenithAngle,atmosphericTransmittance];
+
+                return [cosZenithAngle, atmosphericTransmittance];
                 //return Math.max(0,atmosphericTransmittance * cosZenithAngle) * 3;
             }
             function updateTexture() {
-              texture.needsUpdate = true;
+                texture.needsUpdate = true;
             }
-            
+
             function render() {
                 // Draw latitude and longitude lines
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 //rsc=800/canvas.width;
-                sx=-400*rsc;  
-                sy=-10*rsc;
+                sx = -400 * rsc;
+                sy = -10 * rsc;
                 ctx.drawImage(image, sx, sy, canvas.width, canvas.height);
-                ctx.drawImage(image, canvas.width+sx, sy, canvas.width, canvas.height);
-                ctx.lineWidth=1;
-
-
+                ctx.drawImage(image, canvas.width + sx, sy, canvas.width, canvas.height);
+                ctx.lineWidth = 1;
 
                 for (let latIndex = 0; latIndex < latitudeLines; latIndex++) {
                     for (let lonIndex = 0; lonIndex < longitudeLines; lonIndex++) {
@@ -163,9 +213,9 @@ scene.add(ambientLight);
                         const longitude = (lonIndex / longitudeLines) * 360 - 180;
 
                         const solar = calculateSunlightIntensity(latitude, longitude, dayOfYear, timeOfDay);
-                        const intensity=0.85 - solar[0];
-                        const intensity2=solar[1];
-                        
+                        const intensity = 0.85 - solar[0];
+                        const intensity2 = solar[1];
+
                         const x = lonIndex * lonIncrement;
                         const y = latIndex * latIncrement;
 
@@ -182,19 +232,20 @@ scene.add(ambientLight);
 
                 }
                 ctx.beginPath();
-                ctx.fillStyle='rgba(255,255,100,0.5)';
-                tt=12-timeOfDay;
-                ctx.arc(((tt)/24)*canvas.width,(Math.PI/2+ solarDeclination)*canvas.height/(Math.PI),12,0,2*Math.PI);
-                ctx.arc(((24+tt)/24)*canvas.width,(Math.PI/2+ solarDeclination)*canvas.height/(Math.PI),12,0,2*Math.PI);
-                if (tt<0)tt+=24;
+                ctx.fillStyle = 'rgba(255,255,100,0.5)';
+                tt = 12 - timeOfDay;
+                ctx.arc(((tt) / 24) * canvas.width, (Math.PI / 2 + solarDeclination) * canvas.height / (Math.PI), 12, 0, 2 * Math.PI);
+                ctx.arc(((24 + tt) / 24) * canvas.width, (Math.PI / 2 + solarDeclination) * canvas.height / (Math.PI), 12, 0, 2 * Math.PI);
+                if (tt < 0)
+                    tt += 24;
                 ctx.fill();
 
                 // Draw latitude lines
                 ctx.strokeStyle = 'rgba(255,255,255,0.02)';
                 ctx.font = '12px Arial';
                 ctx.fillStyle = 'orange';
-                ctx.lineWidth=0.5;
-                let oldl=-250;
+                ctx.lineWidth = 0.5;
+                let oldl = -250;
                 for (let i = 0; i <= latitudeLines; i++) {
                     const y = (canvas.height / latitudeLines) * i;
                     const latitude = (i / (latitudeLines - 1)) * 180 - 90;
@@ -202,14 +253,15 @@ scene.add(ambientLight);
                     ctx.moveTo(0, y);
                     ctx.lineTo(canvas.width, y);
                     ctx.stroke();
-                    if (latitude-oldl>=30){
-                      ctx.fillText(`${latitude.toFixed(0)}`, 5, y+15);
-                      oldl=latitude;
-                    }                }
+                    if (latitude - oldl >= 30) {
+                        ctx.fillText(`${latitude.toFixed(0)}`, 5, y + 15);
+                        oldl = latitude;
+                    }
+                }
 
                 // Draw longitude lines
                 ctx.fillStyle = 'cyan';
-                oldl=-10;
+                oldl = -10;
                 for (let i = 0; i <= longitudeLines; i++) {
                     const x = (canvas.width / longitudeLines) * i;
                     ctx.beginPath();
@@ -217,121 +269,121 @@ scene.add(ambientLight);
                     ctx.lineTo(x, canvas.height);
                     ctx.stroke();
                     const longitude = (i / (longitudeLines - 1)) * 360;
-                    if (longitude-oldl>=30){
-                      ctx.fillText(`${longitude.toFixed(0)}`, x-10, tly);
-                      oldl=longitude;
+                    if (longitude - oldl >= 30) {
+                        ctx.fillText(`${longitude.toFixed(0)}`, x - 10, tly);
+                        oldl = longitude;
                     }
                 }
 
                 ctx.beginPath();
-                ctx.lineWidth=3;
+                ctx.lineWidth = 3;
                 ctx.strokeStyle = 'red';
-                x1=p1[1]*canvas.width/360;
-                y1=canvas.height-(p1[0]+90)*canvas.height/180;
-                x2=p2[1]*canvas.width/360;
-                y2=canvas.height-(p2[0]+90)*canvas.height/180;
-                
-                
-                ctx.moveTo(x1,y1);
-                ctx.lineTo(x2,y2);
-                ctx.stroke();
+                x1 = p1[1] * canvas.width / 360;
+                y1 = canvas.height - (p1[0] + 90) * canvas.height / 180;
+                x2 = p2[1] * canvas.width / 360;
+                y2 = canvas.height - (p2[0] + 90) * canvas.height / 180;
 
-                
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                /* Old Circularprojection , update using tube 3d geometry in WebGL , so much faster
                 ctx2.fillStyle = '#000000';
                 ctx2.fillRect(0, 0, canvas2.width, canvas2.height);
                 const tData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const tdata = tData.data;
-                const imageData = ctx2.getImageData(0,0,canvas2.width, canvas2.height);
+                const imageData = ctx2.getImageData(0, 0, canvas2.width, canvas2.height);
                 const data = imageData.data;
-                const rc=canvas2.width/2;
-                cw=Math.floor(canvas2.width*2);
-                let r1=0;
-                for (let sj=0;sj<cw;sj++){
-                  let j=Math.floor(sj*canvas.height/(canvas2.width*2));
-                  let r=1+cw*1.5*sj/cw;
+                const rc = canvas2.width / 2;
+                cw = Math.floor(canvas2.width * 2);
+                let r1 = 0;
+                for (let sj = 0; sj < cw; sj++) {
+                    let j = Math.floor(sj * canvas.height / (canvas2.width * 2));
+                    let r = 1 + cw * 1.5 * sj / cw;
 
-                  r1=r/(2*Math.PI);
-                  
-                  for (let i=0;i<r;i++){
-                    let d=i*2*Math.PI/r;
-                    let idx=0;
-                    if (swappole)
-                      idx=4*((canvas.height-j)*canvas.width+Math.floor(canvas.width-i*canvas.width/r));
-                    else idx=4*((j)*canvas.width+Math.floor(i*canvas.width/r));
-                    
-                    let idx2=(Math.floor(rc*yscale-Math.sin(d)*r1*yscale)*canvas2.width+
-                         Math.floor(rc+Math.cos(d)*r1))*4;
-                    data[idx2]=tdata[idx];
-                    data[idx2+1]=tdata[idx+1];
-                    data[idx2+2]=tdata[idx+2];
-                    
-                    data[idx2+3]=255;
-                  }
+                    r1 = r / (2 * Math.PI);
+
+                    for (let i = 0; i < r; i++) {
+                        let d = i * 2 * Math.PI / r;
+                        let idx = 0;
+                        if (swappole)
+                            idx = 4 * ((canvas.height - j) * canvas.width + Math.floor(canvas.width - i * canvas.width / r));
+                        else
+                            idx = 4 * ((j) * canvas.width + Math.floor(i * canvas.width / r));
+
+                        let idx2 = (Math.floor(rc * yscale - Math.sin(d) * r1 * yscale) * canvas2.width + Math.floor(rc + Math.cos(d) * r1)) * 4;
+                        data[idx2] = tdata[idx];
+                        data[idx2 + 1] = tdata[idx + 1];
+                        data[idx2 + 2] = tdata[idx + 2];
+
+                        data[idx2 + 3] = 255;
+                    }
                 }
                 ctx2.putImageData(imageData, 0, 0);
-/*
-                // sun position
-                js=(-solarDeclination+Math.PI/2)/(Math.PI);
-                
-                let rs=js*r1;
-                ctx2.beginPath();
-                ctx2.fillStyle='yellow';
-                ctx2.arc(Math.cos(hourAngle)*rs+rc,yscale*((swappole?1:-1)*Math.sin(hourAngle)*rs+rc),7,0,2*Math.PI);
-                ctx2.fill();
-*/                
-                if (animasikan){
-                  timeOfDay += document.getElementById("aspeed").value/10;
-                  if (timeOfDay > 24) {
-                      timeOfDay = timeOfDay - 24;
-                      dayOfYear += 1;
-                      if (dayOfYear > 365)
-                          dayOfYear = 0;
-                  }
-                  document.getElementById('dayOfYearInput').value = dayOfYear;
-                  document.getElementById('timeOfDayInput').value = timeOfDay.toFixed(2);
-                  // update 3d object
-                  requestAnimationFrame(render);
+                */
+
+                if (animasikan) {
+                    timeOfDay += document.getElementById("aspeed").value*24 / 100;
+                    if (timeOfDay > 24) {
+                        timeOfDay = timeOfDay - 24;
+                        dayOfYear += 1;
+                        if (dayOfYear > 365)
+                            dayOfYear = 0;
+                    }
+                    document.getElementById('dayOfYearInput').value = dayOfYear;
+                    document.getElementById('timeOfDayInput').value = timeOfDay.toFixed(2);
+                    // update 3d object
+                    requestAnimationFrame(render);
                 }
                 texture.needsUpdate = true;
             }
-            function render3d(){
-                let r=document.getElementById("rot3d").value*2*Math.PI/360;
-                sphere.rotation.y = r+timeOfDay*2*Math.PI/24;
-                sun.position.x=Math.cos(r)*300;
-                sun.position.z=-Math.sin(r)*300;
-                sun.position.y=-Math.sin(solarDeclination)*150;
-                
-                camera.position.z=500;
-                camera.position.y=0;//-Math.sin(solarDeclination)*150;
+            function render3d() {
+                let r = document.getElementById("rot3d").value * 2 * Math.PI / 360;
+                sphere.rotation.y = r + timeOfDay * 2 * Math.PI / 24;
+                sun.position.x = Math.cos(r) * 200;
+                sun.position.z = -Math.sin(r) * 200;
+                sun.position.y = -Math.sin(solarDeclination) * 150;
+
+                camera.position.z = Math.cos(solarDeclination) * 350;
+                camera.position.y = -Math.sin(solarDeclination) * 350;
                 camera.lookAt(sphere.position);
-                camera.updateProjectionMatrix();
+                //camera.updateProjectionMatrix();
                 renderer.render(scene, camera);
+                
+                let rs=190*(solarDeclination+Math.PI/2)/Math.PI;
+                const d=sphere.rotation.y-r-1.6;
+                sun2.position.x = Math.cos(d) * rs;
+                sun2.position.z = Math.sin(d) * rs;
+                sun2.position.y = 100;
+
+                camera.position.z = 250;
+                camera.position.y = 400+Math.sin(solarDeclination) * 150;
+                camera.lookAt(sphere.position);
+                renderer2.render(scene2, camera);
                 requestAnimationFrame(render3d);
             }
             dayOfYear = 0;
             timeOfDay = 0;
-            p1=[-7.0276271,110.3904599];
-            p2=[21.4224804,39.8249901]
-            animasikan=true;
-            function go2(){
-              animasikan=!animasikan;
-              go1();
+            p1 = [-7.0276271, 110.3904599];
+            p2 = [21.4224804, 39.8249901]
+            animasikan = true;
+            function go2() {
+                animasikan = !animasikan;
+                go1();
             }
             function go1() {
-                p1=JSON.parse("["+document.getElementById('pos1').value+"]");
-                p2=JSON.parse("["+document.getElementById('pos2').value+"]");
+                p1 = JSON.parse("[" + document.getElementById('pos1').value + "]");
+                p2 = JSON.parse("[" + document.getElementById('pos2').value + "]");
                 dayOfYear = parseInt(document.getElementById('dayOfYearInput').value);
                 timeOfDay = parseInt(document.getElementById('timeOfDayInput').value);
-                swappole=document.getElementById('swap').checked;
-                tly=swappole?12:canvas.height-12;
+                swappole = document.getElementById('swap').checked;
+                tly = swappole ? 12 : canvas.height - 12;
                 render();
             }
             image.onload = function() {
-              go1();
-              texture.needsUpdate = true;
-              render3d();
+                go1();
+                texture.needsUpdate = true;
+                render3d();
             }
-            
         </script>
     </body>
 </html>
