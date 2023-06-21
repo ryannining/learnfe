@@ -14,12 +14,13 @@
             <input type="text" id="dayOfYearInput" value="100"/>
             <label for="timeOfDayInput">Time of Day (in hours):</label>
             <input type="text" id="timeOfDayInput" value="12"/>
-            <button onclick="go1()">Redraw</button><button onclick="go2()">Animasikan</button>
+        <input type=checkbox id=swap> Flip pole on circular equidistant
+        <br>Draw line from <input id=pos1 value="-7.0276271,110.3904599" size=30> - <input size=30 id=pos2 value="21.4224804,39.8249901">
+        <br><button onclick="go1()">Redraw</button><button onclick="go2()">Animasikan</button>
         </div>
         <canvas id="canvas" width="800" height="400"></canvas>
         <canvas id="canvas3d" width="400" height="400"></canvas><br>
         <canvas id="equidistantCanvas" width="800" height="800"></canvas>
-        Draw line from <input id=pos1 value="-7.0276271,110.3904599" size=30> - <input size=30 id=pos2 value="21.4224804,39.8249901">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
         <script src="images2.js"></script>
         <script>
@@ -35,6 +36,7 @@
               document.getElementById('timeOfDayInput').value = (time*24).toFixed(2);
             }            
             let swappole = urlParams.get('swappole')=='y';
+            document.getElementById('swap').checked=swappole;
             if (!blocksize)blocksize=15;
             
             const canvas = document.getElementById('canvas');
@@ -131,7 +133,7 @@ camera.position.z=200;
             function updateTexture() {
               texture.needsUpdate = true;
             }
-
+            
             function render() {
                 // Draw latitude and longitude lines
                 ctx.fillStyle = '#FFFFFF';
@@ -247,12 +249,6 @@ camera.position.z=200;
                   }
                 }
                 ctx2.putImageData(imageData, 0, 0);
-                sphere.rotation.y += 0.01;
-                texture.needsUpdate = true;
-                camera.position.y=-Math.sin(solarDeclination)*150;
-                camera.lookAt(sphere.position);
-                camera.updateProjectionMatrix();
-                renderer.render(scene, camera);
                 if (animasikan){
                   timeOfDay += 0.1;
                   if (timeOfDay > 24) {
@@ -263,9 +259,18 @@ camera.position.z=200;
                   }
                   document.getElementById('dayOfYearInput').value = dayOfYear;
                   document.getElementById('timeOfDayInput').value = timeOfDay.toFixed(2);
+                  texture.needsUpdate = true;
                   // update 3d object
                   requestAnimationFrame(render);
                 }
+            }
+            function render3d(){
+                sphere.rotation.y += 0.01;
+                camera.position.y=-Math.sin(solarDeclination)*150;
+                camera.lookAt(sphere.position);
+                camera.updateProjectionMatrix();
+                renderer.render(scene, camera);
+                requestAnimationFrame(render3d);
             }
             dayOfYear = 0;
             timeOfDay = 0;
@@ -281,11 +286,15 @@ camera.position.z=200;
                 p2=JSON.parse("["+document.getElementById('pos2').value+"]");
                 dayOfYear = parseInt(document.getElementById('dayOfYearInput').value);
                 timeOfDay = parseInt(document.getElementById('timeOfDayInput').value);
+                swappole=document.getElementById('swap').checked;
                 render();
             }
             image.onload = function() {
-                go1();
+              go1();
+              texture.needsUpdate = true;
+              render3d();
             }
+            
         </script>
     </body>
 </html>
