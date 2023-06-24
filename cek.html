@@ -1,0 +1,13 @@
+<div id=t>
+</div>
+<script>
+fetch( "https://api-jtg.siap-ppdb.com/cari?no_daftar=483102380361578")
+  .then(response => response.json())
+  .then(data => {
+    document.getElementById("t").innerHTML=data[11][3][2][3];
+    // Do something with the data here
+  })
+  .catch(error => {
+    console.error('Error fetching data:', error);
+  });
+</script>
