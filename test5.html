@@ -11,9 +11,9 @@
     <body>
         <div>
             <label for="dayOfYearInput">Day of Year:</label>
-            <input type="text" id="dayOfYearInput" value="100"/>
+            <input type="text" id="dayOfYearInput" value="327"/>
             <label for="timeOfDayInput">Time of Day (in hours):</label>
-            <input type="text" id="timeOfDayInput" value="12"/>
+            <input type="text" id="timeOfDayInput" value="9.35"/>
             <input type=checkbox id=swap>
             Flip pole on circular equidistant
         <br>
@@ -23,12 +23,12 @@
             <br>
             <button onclick="go1()">Redraw</button>
             <button onclick="go2()">Animate</button>
-            Speed <input type="range" min="1" max="1000" value="1" class="slider" id="aspeed">
+            Speed <input type="range" min="1" max="1000" value="1" class="slider" id="aspeed"><span id=info2></span>
         </div>
         <canvas id="canvas" width="800" height="400"></canvas>
         <canvas id="canvas3d" width="400" height="400"></canvas>
         <br>
-        <canvas id="equidistantCanvas" width="600" height="800"></canvas>
+        <canvas id="equidistantCanvas" width="1100" height="800"></canvas>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
         <script src="images2.js"></script>
         <script>
@@ -234,7 +234,7 @@
 
                 }
                 ctx.beginPath();
-                ctx.fillStyle = 'rgba(255,255,100,0.5)';
+                ctx.fillStyle = 'rgba(255,155,50,0.75)';
                 tt = 12 - timeOfDay;
                 ctx.arc(((tt) / 24) * canvas.width, (Math.PI / 2 + solarDeclination) * canvas.height / (Math.PI), 12, 0, 2 * Math.PI);
                 ctx.arc(((24 + tt) / 24) * canvas.width, (Math.PI / 2 + solarDeclination) * canvas.height / (Math.PI), 12, 0, 2 * Math.PI);
@@ -336,14 +336,16 @@
                     // update 3d object
                     requestAnimationFrame(render);
                 }
+                document.getElementById('info2').innerHTML=(solarDeclination*180/Math.PI).toFixed(2);
                 texture.needsUpdate = true;
             }
             function render3d() {
                 let r = document.getElementById("rot3d").value * 2 * Math.PI / 360;
                 sphere.rotation.y = r + timeOfDay * 2 * Math.PI / 24;
+                sphere.rotation.z = 0;//Math.PI/180;
                 sun.position.x = Math.cos(r) * 200;
                 sun.position.z = -Math.sin(r) * 200;
-                sun.position.y = -Math.sin(solarDeclination) * 150;
+                sun.position.y = -Math.sin(solarDeclination) * 250;
 
                 camera.position.z = Math.cos(solarDeclination) * 350;
                 camera.position.y = -Math.sin(solarDeclination) * 350;
@@ -367,7 +369,7 @@
             timeOfDay = 0;
             p1 = [-7.0276271, 110.3904599];
             p2 = [21.4224804, 39.8249901]
-            animasikan = true;
+            animasikan = false;
             function go2() {
                 animasikan = !animasikan;
                 go1();
@@ -376,7 +378,7 @@
                 p1 = JSON.parse("[" + document.getElementById('pos1').value + "]");
                 p2 = JSON.parse("[" + document.getElementById('pos2').value + "]");
                 dayOfYear = parseInt(document.getElementById('dayOfYearInput').value);
-                timeOfDay = parseInt(document.getElementById('timeOfDayInput').value);
+                timeOfDay = parseFloat(document.getElementById('timeOfDayInput').value);
                 swappole = document.getElementById('swap').checked;
                 tly = swappole ? 12 : canvas.height - 12;
                 render();
