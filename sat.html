@@ -4,7 +4,9 @@
     <title>Simulasi Gravitasi</title>
 </head>
 <body>
-    <canvas id="canvas" width="800" height="600"></canvas>
+    <table width=100%><tr valign=top><td width=1200>
+    <canvas id="canvas" width="1200" height="900"></canvas>
+    </td><td>
     <br> <font color=red>-- merah : Vektor gaya total</font> <font color=orange>   -- kuning : Vektor gaya roket</font>  
     <font color=green>   -- hijau : Vektor kecepatan</font>     
     <br>Data simulasi<br><span id=data></span>
@@ -18,19 +20,20 @@
     <br>Target speed stage 2 <input type=text id=v0 value=30000>km/h
     <br>Separation brake <input type=text id=brake value=0.9>km/h
     <br>Zoom <input type="range" min="100" max="10000" value="10000" class="slider" id="scale">
+    <br>Animation <input type="range" min="1" max="20" value="1" class="slider" id="anim">
     <br>
     
     <button id="startBtn">Start</button>
     <button id="pauseBtn">Pause</button>
     <button id="resetBtn">Reset</button>
-    
+    </td></tr></table>
 
     <script>
       trail=[];
       nn=0;
       function pushtrail(d){
         nn++;
-        if (nn<20)return;
+        if (nn<60)return;
         nn=0;
         if (trail.length>300) trail.shift();
         trail.push(d);
@@ -99,7 +102,9 @@
           
           vx2=0;
           vy2=0;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = 'black';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fill();
           trail=[];
           cancelAnimationFrame(requestId);
         }
@@ -268,6 +273,8 @@
         // Fungsi utama untuk mengupdate simulasi
         
         function update() {
+            an=parseInt(getval("anim"));
+            for (i=0;i<an;i++){
             if (!isRunning) return;
             if (stage==0){
               vx2+=rocketF1/m2;
@@ -284,12 +291,11 @@
 
             
             }
-            //for (i=0;i<5;i++){
-            i=0;
+            //i=0;
               calculateGravity();
 
-              drawObjects(i);
-            //}            
+              drawObjects(0);
+            }            
             $("data").innerHTML="V:"+theV +"km/h  H:"+Math.round(hc/1000)+"km  F:"+Math.round(theF/1000) +"kN  A:"+Math.round(theA)+"m/s^2";
           
 
