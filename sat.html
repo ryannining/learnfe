@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simulasi Gravitasi</title>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <br> <font color=red>-- merah : Vektor gaya total</font> <font color=orange>   -- kuning : Vektor gaya roket</font>  
+    <font color=green>   -- hijau : Vektor kecepatan</font>     
+    <br>Data simulasi<br><span id=data></span>
+    <br>Planet Radius <input type=text id=r1 value=6500>km
+    <br>Planet Mass <input type=text id=m1 value=6e24>kg
+    
+    <br>Launch Mass <input type=text id=mass value=42e4>kg
+    <br>Stage 1 rocket <input type=text id=f0 value=17400>kN
+    <br>Stage 2 rocket <input type=text id=f1 value=7400>kN
+    <br>Ketinggial Stage 2 rocket <input type=text id=h0 value=100>km
+    <br>Target speed stage 2 <input type=text id=v0 value=30000>km/h
+    <br>Separation brake <input type=text id=brake value=0.9>km/h
+    <br>Zoom <input type="range" min="100" max="10000" value="10000" class="slider" id="scale">
+    <br>
+    
+    <button id="startBtn">Start</button>
+    <button id="pauseBtn">Pause</button>
+    <button id="resetBtn">Reset</button>
+    
+
+    <script>
+      trail=[];
+      nn=0;
+      function pushtrail(d){
+        nn++;
+        if (nn<20)return;
+        nn=0;
+        if (trail.length>300) trail.shift();
+        trail.push(d);
+      }
+      function $(id) {
+          return document.getElementById(id);
+        }
+        function getval(id){return parseFloat($(id).value);}
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const G = 6.67430e-11; // Konstanta gravitasi universal (m^3 kg^-1 s^-2)
+
+        // Skala: 1 pixel = 100 km
+         scale = 50000; // 1 pixel = 100 km
+         rscale = 1.0/scale; // 1 pixel = 100 km
+        
+        rocketF1=7400000; // in newton
+        rocketF2=7400000; // in newton
+        // Objek pertama (Bumi)
+         m1 = 6e24; // Massa Bumi (kg)
+         r1 = 6000 * 1000 ; // Radius Bumi (m)
+         xw = canvas.width / 2; // Posisi horizontal objek pertama (m)
+         yw = canvas.height / 2; // Posisi vertikal objek pertama (m)
+         x1=0;y1=0;
+        // Objek kedua (Objek bergerak)
+         m2 = 42e4; // Massa objek bergerak (kg) // massa roket + satelit
+         m3 = 42e2; // Massa objek bergerak (kg) // massa satelit
+        const r2 = 0.5 * 1000 ; // Radius objek bergerak (m)
+         v2 = 30000 * 1000 / 3600; // Kecepatan awal objek bergerak (m/s)
+         h2 = 400 * 1000 ; // Ketinggian objek bergerak dari permukaan objek pertama (m)
+         h0=0;
+         x2 = x1 + h2 + r1 + r2; // Posisi horizontal awal objek kedua (m)
+         y2 = y1; // Posisi vertikal awal objek kedua (m/s)
+        let vx2 = 0; // Kecepatan horizontal awal objek kedua (m/s)
+        let vy2 = v2; // Kecepatan vertikal awal objek kedua (m/s)
+        x3=0;
+        y3=0;
+        vx3=0;
+        vy3=0;
+
+        // Tombol
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // Status simulasi
+        let isRunning = false;
+        let requestId;
+
+        // Fungsi menggambar objek
+        stage=0;
+        tgV=0;
+        function reset(){
+          r1 = getval("r1") * 1000 ; // Radius Bumi (m)
+          rocketF1=getval("f0")*1000; // in newton
+          rocketF2=getval("f1")*1000; // in newton
+          m1=getval("m1");
+          m2=getval("mass");
+          h2=getval("h0")*1000;
+          h0=0;
+          y2=y1=x1=0;
+          x2 = r1+h0;
+          stage=0; // from land
+          tgV=getval("v0");
+          v2=tgV*1000/3600;
+          
+          vx2=0;
+          vy2=0;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          trail=[];
+          cancelAnimationFrame(requestId);
+        }
+        function drawObjects(i) {
+            if (i==0) {
+              ctx.fillStyle = 'black';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.fill();
+            
+              // auto xw and yw and scale
+              scale=(10080-getval("scale"))*50;
+              rscale=1.0/scale;
+              xw = canvas.width / 2 -x2* rscale; // Posisi horizontal objek pertama (m)
+              yw = canvas.height / 2-y2* rscale; // Posisi vertikal objek pertama (m)
+              //xw = canvas.width / 2; // Posisi horizontal objek pertama (m)
+              //yw = canvas.height / 2; // Posisi vertikal objek pertama (m)
+
+            // Menggambar objek pertama (Bumi)
+              ctx.beginPath();
+              ctx.arc(xw+x1* rscale, yw+y1* rscale, r1 * rscale, 0, Math.PI * 2);
+              ctx.fillStyle = 'blue';
+              ctx.fill();
+          }
+              // Menggambar objek kedua (Objek bergerak)
+              ctx.beginPath();
+              ctx.arc(xw+x2* rscale, yw+y2* rscale, 20000*rscale, 0, Math.PI * 2);
+              ctx.fillStyle = 'white';
+              ctx.fill();
+              
+              // Menggambar roket
+              tv=Math.sqrt(vx3*vx3+vy3*vy3); // buat menormalkan vy
+              if (tv>0){ 
+                ctx.beginPath();
+                ctx.moveTo(xw+x3* rscale, yw+y3* rscale);
+                ctx.lineTo(xw+x3* rscale - vx3 * rscale*100011/tv, yw+y3 *rscale - vy3 * rscale*100011/tv);
+                ctx.strokeStyle = 'gray';
+                ctx.lineWidth = 41210*rscale;
+                ctx.stroke();
+                if (stage!=2 && Math.random()<0.8){
+                  ctx.beginPath();
+                  ctx.arc(xw+x3* rscale - vx3 * rscale*102011/tv, yw+y3 *rscale - vy3 * rscale*102011/tv, 30000*rscale, 0, Math.PI * 2);
+                  ctx.fillStyle = 'orange';
+                  ctx.fill();
+                }
+              }
+              ctx.lineWidth=1;              
+            for (tr of trail){
+
+              // Menggambar objek kedua (Objek bergerak)
+              ctx.beginPath();
+              ctx.arc(xw+tr[0]* rscale, yw+tr[1]* rscale, 10000*rscale, 0, Math.PI * 2);
+              ctx.fillStyle = 'gray';
+              ctx.fill();
+
+              // Menggambar vektor pergerakan objek kedua
+              ctx.beginPath();
+              ctx.moveTo(xw+tr[0]* rscale, yw+tr[1]* rscale);
+              ctx.lineTo(xw+tr[0]* rscale + tr[2] * rscale*15, yw+tr[1]* rscale + tr[3] * rscale*15);
+              ctx.strokeStyle = '#00FF00cc';
+              ctx.stroke();
+
+              // Menggambar vektor roket
+              ctx.beginPath();
+              ctx.moveTo(xw+tr[0]* rscale, yw+tr[1]* rscale);
+              ctx.lineTo(xw+tr[0]* rscale + tr[4] * rscale*0.01, yw+tr[1]* rscale - tr[5] * rscale*0.01);
+              ctx.strokeStyle = 'orange';
+              ctx.stroke();
+
+              // Menggambar vektor force total
+              ctx.beginPath();
+              ctx.moveTo(xw+tr[0]* rscale, yw+tr[1]* rscale);
+              ctx.lineTo(xw+tr[0]* rscale + tr[6] * rscale*0.03, yw+tr[1]* rscale + tr[7] * rscale*0.03);
+              ctx.strokeStyle = '#FF005588';
+              ctx.stroke();
+
+            }
+        }
+
+        // Fungsi menghitung gaya gravitasi
+        let hc=0;
+        theV=0;
+        oldV=0;
+        theF=0;
+        theA=0;
+        tgV=0;
+        function calculateGravity2() {
+            const dx = x3 - x1;
+            const dy = y3 - y1;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            hc=distance-r1;
+            if (distance<r1) {
+              //vx3=0;
+              //vy3=0;
+              
+            } else {
+
+              const force = (G * m1 * m2) / (distance * distance); //   F = (G * m1 * m2) / d^2
+              const angle = Math.atan2(dy, dx);
+
+
+              
+               fx = -force * Math.cos(angle);
+               fy = -force * Math.sin(angle);
+                     
+              vx3 += (fx / m2);   // sumbu X V = V0 + a       F=m.a     a=F/m
+              vy3 += (fy / m2);   // sumbu X V = V0 + a       F=m.a     a=F/m
+              x3 += vx3*1;   //Axis X   S = S0 + V*t
+              y3 += vy3*1;   //Axis Y   S = S0 + V*t
+
+          }
+        }
+        function calculateGravity() {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            hc=distance-r1;
+            if (distance<r1) {
+              vx2=0;
+              vy2=0;
+              
+            } else {
+              ms=(stage==2?m3:m2);
+              const force = (G * m1 * ms) / (distance * distance); //   F = (G * m1 * m2) / d^2
+              const angle = Math.atan2(dy, dx);
+
+
+              rfx=0;
+              rfy=0;
+              if (stage==1){
+                 rfy = rocketF2 * Math.cos(angle);
+                 rfx = rocketF2 * Math.sin(angle);
+              } 
+               fx = rfx-force * Math.cos(angle);
+               fy = rfy-force * Math.sin(angle);
+                     
+              vx2 += (fx / ms);   // sumbu X V = V0 + a       F=m.a     a=F/m
+              vy2 += (fy / ms);   // sumbu X V = V0 + a       F=m.a     a=F/m
+
+          }
+          oldV=theV;
+          theV=Math.round(Math.sqrt(vx2*vx2+vy2*vy2)*3.600);
+          theA=(theV-oldV)*1000/3600;
+          theF=theA*m2;
+          if (theV>tgV){
+            stage=2;
+            brake=getval("brake");
+            vx3*=brake;
+            vy3*=brake;
+            
+          }
+          x2 += vx2*1;   //Axis X   S = S0 + V*t
+          y2 += vy2*1;   //Axis Y   S = S0 + V*t
+          // body rocket
+          if (stage<2){
+            x3=x2;
+            y3=y2;
+            vx3=vx2;
+            vy3=vy2;
+          } else {
+            calculateGravity2();
+          }
+          pushtrail([x2,y2,vx2,vy2,stage==0?-rocketF1:rfx,rfy,fx,fy]);
+
+        }
+
+        // Fungsi utama untuk mengupdate simulasi
+        
+        function update() {
+            if (!isRunning) return;
+            if (stage==0){
+              vx2+=rocketF1/m2;
+              h0+=vx2;
+              x2+=vx2;
+              if (h0>=h2) stage=1;
+              //pushtrail(x2,y2,vx2,vy2,rocketF1,0);
+            } else if(stage==1){
+              //vy2=v2;
+              //if (h0>=h2*0.8) stage=2;
+            } else if(stage==2){
+            
+            
+
+            
+            }
+            //for (i=0;i<5;i++){
+            i=0;
+              calculateGravity();
+
+              drawObjects(i);
+            //}            
+            $("data").innerHTML="V:"+theV +"km/h  H:"+Math.round(hc/1000)+"km  F:"+Math.round(theF/1000) +"kN  A:"+Math.round(theA)+"m/s^2";
+          
+
+            requestId = requestAnimationFrame(update);
+        }
+
+        // Event listener untuk tombol Start
+        startBtn.addEventListener('click', () => {
+            reset();
+            //x2 = x1 + h2 + r1 + r2;
+            //y2 = y1;
+            //vx2 = 0;
+            //vy2 = v2;
+            drawObjects();
+            isRunning = true;
+            update();
+
+        });
+
+        // Event listener untuk tombol Pause
+        pauseBtn.addEventListener('click', () => {
+            if (isRunning){
+            isRunning = false;
+            cancelAnimationFrame(requestId);
+          } else {
+            isRunning = true;
+            update();
+          }
+        });
+
+        // Event listener untuk tombol Reset
+        resetBtn.addEventListener('click', () => {
+
+        });
+
+        // Menggambar objek awal
+        reset();
+        drawObjects();
+    </script>
+</body>
+</html>
