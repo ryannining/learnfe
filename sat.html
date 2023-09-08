@@ -2,6 +2,12 @@
 <html>
 <head>
     <title>Simulasi Gravitasi</title>
+        <style>
+        canvas {
+            border: 1px solid black;
+            cursor: grab;
+        }
+    </style>
 </head>
 <body>
     <table width=100%><tr valign=top><td width=1200>
@@ -25,25 +31,66 @@
     
     <button id="startBtn">Start</button>
     <button id="pauseBtn">Pause</button>
-    <button id="resetBtn">Reset</button>
+    <button id="resetBtn">View Sat</button>
     </td></tr></table>
 
     <script>
+              const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+ 
+let isPanning = false;
+let followsatelite=true;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        canvas.addEventListener('mousedown', (e) => {
+            isPanning = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            canvas.style.cursor = 'grabbing';
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isPanning) {
+                const deltaX = e.clientX - lastMouseX;
+                const deltaY = e.clientY - lastMouseY;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                canvas.style.cursor = 'grabbing';
+                followsatelite=false;
+                xw += deltaX;
+                yw += deltaY;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isPanning = false;
+            canvas.style.cursor = 'grab';
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            sl= $('scale');
+            if (e.deltaY < 0) {
+                sl.value=sl.value*1+2;
+            } else {
+                sl.value=sl.value*1-2;
+            }
+      });      
+        
+        
       trail=[];
       nn=0;
       function pushtrail(d){
         nn++;
-        if (nn<60)return;
+        if (nn<30)return;
         nn=0;
-        if (trail.length>300) trail.shift();
+        if (trail.length>500) trail.shift();
         trail.push(d);
       }
       function $(id) {
           return document.getElementById(id);
         }
         function getval(id){return parseFloat($(id).value);}
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
         const G = 6.67430e-11; // Konstanta gravitasi universal (m^3 kg^-1 s^-2)
 
         // Skala: 1 pixel = 100 km
@@ -86,6 +133,15 @@
         // Fungsi menggambar objek
         stage=0;
         tgV=0;
+        function autoscale(){
+              // auto xw and yw and scale
+              scale=(10080-getval("scale"))*50;
+              rscale=1.0/scale;
+              if (followsatelite){
+                xw = canvas.width / 2 -x2* rscale; // Posisi horizontal objek pertama (m)
+                yw = canvas.height / 2-y2* rscale; // Posisi vertikal objek pertama (m)
+              }
+        }
         function reset(){
           r1 = getval("r1") * 1000 ; // Radius Bumi (m)
           rocketF1=getval("f0")*1000; // in newton
@@ -105,6 +161,11 @@
           ctx.fillStyle = 'black';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.fill();
+          autoscale();
+          ctx.beginPath();
+              ctx.arc(xw+x1* rscale, yw+y1* rscale, r1 * rscale, 0, Math.PI * 2);
+              ctx.fillStyle = 'blue';
+              ctx.fill();
           trail=[];
           cancelAnimationFrame(requestId);
         }
@@ -114,14 +175,7 @@
               ctx.fillRect(0, 0, canvas.width, canvas.height);
               ctx.fill();
             
-              // auto xw and yw and scale
-              scale=(10080-getval("scale"))*50;
-              rscale=1.0/scale;
-              xw = canvas.width / 2 -x2* rscale; // Posisi horizontal objek pertama (m)
-              yw = canvas.height / 2-y2* rscale; // Posisi vertikal objek pertama (m)
-              //xw = canvas.width / 2; // Posisi horizontal objek pertama (m)
-              //yw = canvas.height / 2; // Posisi vertikal objek pertama (m)
-
+              autoscale();
             // Menggambar objek pertama (Bumi)
               ctx.beginPath();
               ctx.arc(xw+x1* rscale, yw+y1* rscale, r1 * rscale, 0, Math.PI * 2);
@@ -177,7 +231,7 @@
               ctx.beginPath();
               ctx.moveTo(xw+tr[0]* rscale, yw+tr[1]* rscale);
               ctx.lineTo(xw+tr[0]* rscale + tr[6] * rscale*0.03, yw+tr[1]* rscale + tr[7] * rscale*0.03);
-              ctx.strokeStyle = '#FF005588';
+              ctx.strokeStyle = 'red';
               ctx.stroke();
 
             }
@@ -206,8 +260,8 @@
 
 
               
-               fx = -force * Math.cos(angle);
-               fy = -force * Math.sin(angle);
+               var fx = -force * Math.cos(angle);
+               var fy = -force * Math.sin(angle);
                      
               vx3 += (fx / m2);   // sumbu X V = V0 + a       F=m.a     a=F/m
               vy3 += (fy / m2);   // sumbu X V = V0 + a       F=m.a     a=F/m
@@ -219,6 +273,8 @@
         function calculateGravity() {
             const dx = x2 - x1;
             const dy = y2 - y1;
+            var fx=0;
+            var fy=0;
             const distance = Math.sqrt(dx * dx + dy * dy);
             hc=distance-r1;
             if (distance<r1) {
@@ -226,7 +282,7 @@
               vy2=0;
               
             } else {
-              ms=(stage==2?m3:m2);
+              ms=(stage==2?m2:m2);
               const force = (G * m1 * ms) / (distance * distance); //   F = (G * m1 * m2) / d^2
               const angle = Math.atan2(dy, dx);
 
@@ -258,6 +314,7 @@
           x2 += vx2*1;   //Axis X   S = S0 + V*t
           y2 += vy2*1;   //Axis Y   S = S0 + V*t
           // body rocket
+          pushtrail([x2,y2,vx2,vy2,stage==0?-rocketF1:rfx,rfy,fx,fy]);
           if (stage<2){
             x3=x2;
             y3=y2;
@@ -266,7 +323,6 @@
           } else {
             calculateGravity2();
           }
-          pushtrail([x2,y2,vx2,vy2,stage==0?-rocketF1:rfx,rfy,fx,fy]);
 
         }
 
@@ -294,8 +350,8 @@
             //i=0;
               calculateGravity();
 
-              drawObjects(0);
             }            
+            drawObjects(0);
             $("data").innerHTML="V:"+theV +"km/h  H:"+Math.round(hc/1000)+"km  F:"+Math.round(theF/1000) +"kN  A:"+Math.round(theA)+"m/s^2";
           
 
@@ -328,7 +384,7 @@
 
         // Event listener untuk tombol Reset
         resetBtn.addEventListener('click', () => {
-
+          followsatelite=!followsatelite;
         });
 
         // Menggambar objek awal
