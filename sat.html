@@ -2,7 +2,18 @@
 <html>
     <head>
         <title>Simulasi Gravitasi</title>
-        <style>
+        <style>  
+          /* Define a blinking animation */
+  @keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  /* Apply the animation to the text */
+  .blinking-text {
+    animation: blink 1s infinite;
+  }
             canvas {
                 border: 1px solid black;
                 cursor: grab;
@@ -15,7 +26,7 @@
                 <td width=1200>
                     <canvas id="canvas" width="1200" height="900"></canvas>
                 </td>
-                <td>
+                <td><h2 id=pause1 style="display:none" class="blinking-text">Pause ! Tekan tombol P untuk melanjutkan</h2>
                     <br>
                     <font color=red>-- merah : Vektor gaya total</font>
                     <font color=orange>-- kuning : Vektor gaya roket</font>
@@ -57,7 +68,7 @@
                     Module rocket <input type=text id=f3 size=5 value=45>kN<br>
                     Module rocket burn time <input type=text id=burntime size=3 value=5>menit<br>
                     Manual Tombol keyboard: <br>(1) Aktifkan roket searah <br>(2) Aktifkan roket lawan arah (rem) <br>(3) Aktifkan roket arah ke bulan
-                    <br>(4)Pause
+                    <br>(4/P)Pause
                     
                     <hr>Automatic Lunar module rocket activation script (time,key, duration)<br>
                     <textarea id="actionList" rows="5" cols="50" placeholder="Enter actions here (time,key, duration)">
@@ -377,8 +388,8 @@
                 //   F = (G * m1 * m2) / d^2
                 let distance = Math.sqrt(dx * dx + dy * dy);
                 let force = (G * A[2] * B[2]) / (distance * distance);
-                let angle = Math.atan2(dy, dx);
-                return [force,distance,angle]
+                let Vectorangle = Math.atan2(dy, dx);
+                return [force,distance,Vectorangle]
             }
             
             function calculateMoon() {
@@ -498,7 +509,7 @@
             //
             function update(an) {
                 if (isNaN(an) || an==0)an = parseInt(getval("anim"));
-
+                $("pause1").style.display=isRunning?'none':'block';
                   for (i = 0; i < an; i++) {
                     if (isRunning){
                       simtime++;
@@ -589,6 +600,10 @@
             // Function to handle the spacebar key press do rocket burn
             function handleSpacebarPress(event) {
                 // Check if the pressed key is the Spacebar (keyCode 32)
+                if (event.keyCode === 80) {
+                    // Execute your desired action here
+                    isRunning=!isRunning;
+                }
                 if (event.keyCode === 49) {
                     // Execute your desired action here
                     satburn = 1;
@@ -630,7 +645,7 @@
 
 
             // Add an event listener to the document to detect keydown events
-            document.addEventListener('keydown', handleSpacebarPress);
+
             document.addEventListener('keyup', handleSpacebarPress);
 
             // Menggambar objek awal
