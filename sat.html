@@ -57,14 +57,15 @@
                     <br>
                     Speed <input type="range" min="1" max="1000" value="1" class="slider" id="anim">
                     <br>
-                    <button id="startBtn">Start</button>
-                    <button id="start2Btn">Start &gt;&gt;</button>
+                    <button id="startBtn">Mulai</button>
+                    <button id="start2Btn">Mulai &gt;&gt;</button>
                     <button id="pauseBtn">Pause</button>
-                    <button id="view1">View Sat</button>
-                    <button id="view2">View Moon</button>
-                    <button id="view3">View Planet</button>
+                    <button id="view1">Lihat L.M</button>
+                    <button id="view2">Lihat Bulan</button>
+                    <button id="view3">Lihat Bumi</button>
                     <br>
                     <button id="rem1">Rem Bulan</button>
+                    <button id="rem2">Buang Bulan</button>
                     
                     
                     <br><hr>
@@ -73,7 +74,7 @@
                     Manual Tombol keyboard: <br>(1) Aktifkan roket searah <br>(2) Aktifkan roket lawan arah (rem) <br>(3) Aktifkan roket arah ke bulan
                     <br>(4/P)Pause
                     
-                    <hr><input type=checkbox value=checked id=cek1>Automatic Lunar module rocket activation script (time,key, duration)<br>
+                    <hr><input type=checkbox checked=true id=cek1>Automatic Lunar module rocket activation script (time,key, duration)<br>
                     <textarea id="actionList" rows="5" cols="50" placeholder="Enter actions here (time,key, duration)">
 12800,1,15
 41500,1,25
@@ -227,6 +228,7 @@
             const view2 = document.getElementById('view2');
             const view3 = document.getElementById('view3');
             const rem1 = document.getElementById('rem1');
+            const rem2 = document.getElementById('rem2');
             // Status simulasi
             let isRunning = false;
             let requestId;
@@ -253,8 +255,10 @@
 
             }
             runscript=0;
+            numcalc=0;
             function reset() {
                 satburn=0;
+                numcalc=0;
                 simtime=0;
                 loadActions();
                 runscript=$("cek1").checked;
@@ -283,7 +287,8 @@
                 moonvx = -3683 * 1000 / 3600;
                 moony = 363104 * 1000;
                 moonx = 0;
-
+                moonr = 3474 * 500;
+                moonmass = 7.35e22;
                 vx2 = 0;
                 vy2 = 0;
                 ctx.fillStyle = 'black';
@@ -388,6 +393,7 @@
             tgV = 0;
 
             function Gravity(A,B) {
+                numcalc++;
                 let dx = B[0] - A[0];
                 let dy = B[1] - A[1];
                 //   F = (G * m1 * m2) / d^2
@@ -549,7 +555,7 @@
                     }
                   }  
                 drawObjects(0);
-                $("data").innerHTML = "SIMTIME:"+simtime+"<br>V:" + theV + "km/h  H:" + Math.round(hc / 1000) + "km  F:" + Math.round(theF / 1000) + "kN  A:" + Math.round(theA) + "m/s^2";
+                $("data").innerHTML = "SIMTIME:"+simtime+"<br># Gravity calculation:"+numcalc+"<br>V:" + theV + "km/h  H:" + Math.round(hc / 1000) + "km  F:" + Math.round(theF / 1000) + "kN  A:" + Math.round(theA) + "m/s^2";
 
                 requestId = requestAnimationFrame(update1);
             }
@@ -571,6 +577,7 @@
                 reset();
                 drawObjects();
                 isRunning = true;
+                runscript=true;
                 update(10000000);
             }
             );
@@ -606,6 +613,11 @@
             rem1.addEventListener('click', ()=>{
                 moonvx *= 0.9;
                 moonvy *= 0.9;
+            }
+            );
+            rem2.addEventListener('click', ()=>{
+                moonr = 1;
+                moonmass = 1;
             }
             );
             // Function to handle the spacebar key press do rocket burn
