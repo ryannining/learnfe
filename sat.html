@@ -92,6 +92,8 @@
 
 
 </textarea>
+<hr><input type=checkbox checked=true id=tidalforce>Visualisasikan Gaya Pasang surut (diskala supaya terlihat)
+
                 </td>
             </tr>
         </table>
@@ -402,6 +404,45 @@
                 let Vectorangle = Math.atan2(dy, dx);
                 return [force,distance,Vectorangle]
             }
+            tidal=[];
+            function calculateTidal(){
+              // titik tengah earth
+              tidal=[];
+              tidal.push([0,0,Gravity([0,0,m1],[moonx,moony,moonmass])]);
+              // data dari permukaan dibagi menjadi per 2 derajat 
+              for (var i=0;i<180;i++){
+                let a=4*Math.PI*i/360;
+                x=Math.sin(a)*r1;
+                y=Math.cos(a)*r1,m1;
+                var F=Gravity([x,y,m1],[moonx,moony,moonmass]);
+                tidal.push([x,y,F]); //[force,distance,angle]
+              }
+              
+            }
+            
+            function drawTidalForce(){
+              if (!$('tidalforce').checked)return;
+              calculateTidal();
+
+              ctx.beginPath();
+              ctx.strokeStyle = 'gray';
+              ctx.lineWidth = 1;//100000 * rscale;
+              let t=tidal[0];
+              let s=10000000.0/t[2][0];
+              let fx0 = s*t[2][0] * Math.cos(t[2][2]);
+              let fy0 = s*t[2][0] * Math.sin(t[2][2]);
+              for (var i=1;i<tidal.length;i++){
+                let t=tidal[i];
+                let x=t[0];
+                let y=t[1];
+                let fx = fx0-s*t[2][0] * Math.cos(t[2][2]);
+                let fy = fy0-s*t[2][0] * Math.sin(t[2][2]);
+                
+                ctx.moveTo(xw + x * rscale, yw + y * rscale);
+                ctx.lineTo(xw + x * rscale - fx * rscale , yw + y * rscale - fy * rscale );
+              }
+              ctx.stroke();
+            }
             
             function calculateMoon() {
                 // calculate moon gravity to earth
@@ -416,7 +457,6 @@
                 // S = S0 + V
                 moonx += moonvx * 1;
                 moony += moonvy * 1;
-
             }
             
             function rocketBody() {
@@ -555,6 +595,7 @@
                     }
                   }  
                 drawObjects(0);
+                drawTidalForce();
                 $("data").innerHTML = "SIMTIME:"+simtime+"<br># Gravity calculation:"+numcalc+"<br>V:" + theV + "km/h  H:" + Math.round(hc / 1000) + "km  F:" + Math.round(theF / 1000) + "kN  A:" + Math.round(theA) + "m/s^2";
 
                 requestId = requestAnimationFrame(update1);
