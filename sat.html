@@ -25,6 +25,8 @@
             <tr valign=top>
                 <td width=1200>
                     <canvas id="canvas" width="1200" height="900"></canvas>
+                    <canvas id="canvas2" width="100" height="100" style="position:absolute;left:1110px;top:10px"></canvas>
+                    <canvas id="canvas3" width="100" height="100" style="position:absolute;left:1110px;top:120px"></canvas>
                 </td>
                 <td><h2 id=pause1 style="display:none" class="blinking-text">Pause ! Tekan tombol P untuk melanjutkan</h2>
                     <br>
@@ -34,25 +36,30 @@
                     <br>
                     Data simulasi<br>
                     <span id=data></span>
-                    <br>
-                    Planet Radius <input type=text id=r1 size=5 value=6500>km<br>
-                    Planet Mass <input type=text id=mass size=5 value=6e24>kg<br>
-                    Rocket 1 Mass <input type=text id=rm1 size=5 value=21e4>kg<br>
-                    Rocket 2 Mass <input type=text id=rm2 size=5 value=21e4>kg<br>
-                    Module Mass <input type=text id=sm size=5 value=15000>kg<br>
-                    Stage 1 rocket <input type=text id=f0 size=5 value=34000>kN<br>
-                    Stage 2 rocket <input type=text id=f1 size=5 value=2000>kN<br>
+                    <table width="100%"><tr valign=top><td>
+                    R-Bumi <input type=text id=r1 size=5 value=6500>km<br>
+                    Masa Bumi <input type=text id=mass size=5 value=6e24>kg<br>
+                    <br><b>Roket</b><br>
+                    Masa Rk1 <input type=text id=rm1 size=5 value=21e4>kg<br>
+                    Masa Rk2 <input type=text id=rm2 size=5 value=21e4>kg<br>
+                    Masa L.M <input type=text id=sm size=5 value=15000>kg<br>
+                    Daya Rk1  <input type=text id=f0 size=5 value=34000>kN<br>
+                    Daya Rk1 <input type=text id=f1 size=5 value=2000>kN<br>
                     
                     
-                    Ketinggial Stage 2 rocket <input type=text id=h0 value=100>
-                    km
-    <br>
-                    Target speed stage 2 <input type=text id=v0 value=30000>
-                    km/h
-    <br>
-                    Separation brake <input type=text id=brake value=0.9>
-                    km/h
-    <br>
+                    Alt Rk1 <input type=text id=h0 size=5 value=100>km<br>
+                    Vel Rk2 <input type=text id=v0 size=5 value=30000>km/h<br>
+                    Sep. brake <input type=text id=brake size=5 value=0.9>km/h<br>
+                    </td><td>
+                     R-Bulan <input type=text id=r2 size=8 value=1737e3>km<br>
+                     Masa  <input type=text id=mas2 size=8 value=7.35e22>kg<br>
+                     Jarak  <input type=text id=d2 size=8 value=363104>km<br>
+                     V0  <input type=text id=v02 size=8 value=3683>km/h<br>
+                     <br>                      
+                     R-Matahari <input type=text id=rsun size=8 value=699e3>km<br>
+                     Masa  <input type=text id=massun size=8 value=1.98e30>kg<br>
+                     Jarak  <input type=text id=dsun size=8 value=15e7>km<br>
+                    </td>></tr></table><hr>
                     Zoom <input type="range" min="1" max="10000" value="10000" class="slider" id="scale">
                     <br>
                     Speed <input type="range" min="1" max="1000" value="1" class="slider" id="anim">
@@ -105,6 +112,82 @@
             </tr>
         </table>
         <script>
+
+            function calculateColorWithExposure(r, g, b, exposure) {
+
+              // Calculate new R, G, B values based on exposure
+              r = Math.min(Math.max(r*0.1 + r * exposure, 0), 255);  
+              g = Math.min(Math.max(g*0.1 + g * exposure, 0), 255);
+              b = Math.min(Math.max(b*0.1 + b * exposure, 0), 255);
+
+              // Return new color as RGB array
+              return [r, g, b];
+
+            }
+                
+            function renderPhase(can,x, y, radius, colb, col,lightVector) {
+
+              const canvas = document.getElementById(can);
+              const ctx = canvas.getContext('2d');
+
+              const width = canvas.width;
+              const height = canvas.height;
+
+              const dx = lightVector[0];
+              const dy = lightVector[1]; 
+              const dz = lightVector[2];
+              ctx.beginPath();
+              c1 = `rgb(${colb[0]},${colb[1]},${colb[2]},0.5)`;
+              ctx.fillStyle='black';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.fill();
+
+              //ctx.fillStyle = 'blue';
+              //ctx.arc(x, y, radius,0,Math.PI*2);
+              //ctx.fill();
+              scd=Math.floor(radius/20);
+              sc=scd*2;
+              wd=Math.ceil(radius/sc);   
+              for(let i = -wd; i < wd; i++) {
+                for(let j = -wd; j < wd; j++) {
+
+                  // Hitung koordinat pixel
+                  let px = i*sc;
+                  let py = j*sc;
+                  let pz = Math.sqrt(radius**2 - px**2 - py**2);
+
+                  // Hitung vektor normal pixel
+                  let nx = px / radius;
+                  let ny = py / radius;
+                  let nz = pz / radius;
+
+                  // Hitung intensitas cahaya
+                  let brightness = nx * dx + ny * dy + nz * dz;
+                  brightness = Math.max(brightness, 0);  
+
+                  if(px**2 + py**2 < radius**2) {
+                    outputRGB=calculateColorWithExposure(  col[0], col[1], col[2], brightness);
+                    ctx.fillStyle = `rgb(${outputRGB[0]},${outputRGB[1]},${outputRGB[2]})`;
+                    ctx.fillRect(x+px-scd,y+py-scd,sc,sc);
+                  }
+
+                }
+              }
+              ctx.beginPath();
+              ctx.strokeStyle = 'black';
+              ctx.lineWidth=sc;
+              ctx.arc(x, y, radius,0,Math.PI*2);
+              ctx.stroke();
+              ctx.save();
+              ctx.beginPath();
+              ctx.globalCompositeOperation = 'lighter';
+              ctx.fillStyle=c1;
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.fill();
+              ctx.restore();
+
+
+            }          
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
 
@@ -282,6 +365,7 @@
                 satburn=0;
                 numcalc=0;
                 simtime=0;
+                trail=[];
                 loadActions();
                 runscript=$("cek1").checked;
                 r1 = getval("r1") * 1000;
@@ -305,24 +389,22 @@
                 // from land
                 tgV = getval("v0");
                 v2 = tgV * 1000 / 3600;
+                
+                sunx=-getval("dsun")*1000;
+                suny=0;
+                sunm1=getval("massun");
+                sunr1=getval("rsun")*1000;
 
                 moonvy = 0;
-                moonvx = -3683 * 1000 / 3600;
-                moony = 363104 * 1000;
+                moonvx = -getval("v02") * 1000 / 3600;
+                moony = getval("d2")*1000;
                 moonx = 0;
-                moonr = 3474 * 500;
-                moonmass = 7.35e22;
+                moonr = getval("r2");
+                moonmass = getval("mas2");
                 vx2 = 0;
                 vy2 = 0;
-                ctx.fillStyle = 'black';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fill();
-                autoscale();
-                ctx.beginPath();
-                ctx.arc(xw + x1 * rscale, yw + y1 * rscale, r1 * rscale, 0, Math.PI * 2);
-                ctx.fillStyle = 'blue';
-                ctx.fill();
-                trail = [];
+                drawObjects(0);
+
                 cancelAnimationFrame(requestId);
             }
             function drawLightTrace(xa,ya,p1){
@@ -391,6 +473,12 @@
                     ctx.arc(p[0],p[1], p[2],0, Math.PI * 2);
                     ctx.fillStyle = 'blue';
                     ctx.fill();
+                    ctx.beginPath();
+                    
+                    ctx.arc(p[0],p[1], p[2],Math.PI*1.5, Math.PI/2);
+                    ctx.fillStyle = '#000022';
+                    ctx.fill();
+
                     ctx.moveTo(p[0],p[1]);
                     ctx.lineTo(p[0]+Math.sin(ro1)*p[2],p[1]+Math.cos(ro1)*p[2]);
                     ctx.stroke();
@@ -401,7 +489,10 @@
                     ctx.arc(p[0],p[1],p[2], 0,Math.PI * 2);
                     ctx.fillStyle = 'gray';
                     ctx.fill();
-                    
+                    ctx.beginPath();
+                    ctx.arc(p[0],p[1],p[2], Math.PI*1.5, Math.PI/2);
+                    ctx.fillStyle = '#222222';
+                    ctx.fill();
                     ctx.moveTo(p[0],p[1]);
                     ctx.lineTo(p[0]+Math.sin(ro2)*p[2],p[1]+Math.cos(ro2)*p[2]);
                     ctx.stroke();
@@ -578,11 +669,12 @@
               }
               ctx.stroke();
             }
-            
+            var moonangle=0;
             function calculateMoon() {
                 // calculate moon gravity to earth
                 //   F = (G * m1 * m2) / d^2
                 [force,distance,angle]=Gravity([x1,y1,m1],[moonx,moony,moonmass]);
+                moonangle=angle;
                 // pecah vektor ke X dan Y
                 var fx = -force * Math.cos(angle);
                 var fy = -force * Math.sin(angle);
@@ -742,6 +834,18 @@
                   }  
                 drawObjects(0);
                 drawTidalForce();
+                
+                // moon phase dikalkulasi dari sudut bulan dan sudu sinar matahari
+                phase=moonangle+Math.PI/2;
+                // langit dipandang dari pengamat, bulan mati diamati siang hari misalnya
+                colb= calculateColorWithExposure(50, 100, 255, Math.max(0,-Math.sin(phase)));
+                renderPhase('canvas2',50, 50, 50, colb,[150,150,150],[-Math.cos(phase),0,Math.sin(phase)]);
+                // fase bumi diamati dari bulan
+                phase=moonangle+Math.PI/2;
+                // langit gelap karena tanpa atmosfer
+                colb= [0,0,0];
+                renderPhase('canvas3',50, 50, 50, colb,[100,150,255],[Math.cos(phase),0,-Math.sin(phase)]);
+                
                 $("data").innerHTML = "SIMTIME:"+simtime+"<br># Gravity calculation:"+numcalc+"<br>V:" + theV + "km/h  H:" + Math.round(hc / 1000) + "km  F:" + Math.round(theF / 1000) + "kN  A:" + Math.round(theA) + "m/s^2";
 
                 requestId = requestAnimationFrame(update1);
