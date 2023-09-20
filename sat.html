@@ -37,7 +37,8 @@
                     Data simulasi<br>
                     <span id=data></span>
                     <table width="100%"><tr valign=top><td>
-                    
+                      
+                    <b>Konstanta G</b><input type=text id=cG size=12 value=6.67430e-11><button id="applyG">Apply</button><br>
                     <b>Setting Roket Peluncur</b><br>
                     Masa Rk1 <input type=text id=rm1 size=5 value=21e4>kg<br>
                     Masa Rk2 <input type=text id=rm2 size=5 value=21e4>kg<br>
@@ -217,7 +218,7 @@
                     lastMouseX = e.clientX;
                     lastMouseY = e.clientY;
                     canvas.style.cursor = 'grabbing';
-                    followsatelite = 0;
+                    if (followsatelite!=4)followsatelite = 0;
                     xw += deltaX;
                     yw += deltaY;
                 }
@@ -259,7 +260,7 @@
             }
             
             satburn=0;
-            const G = 6.67430e-11;
+            var G = 6.67430e-11;
             // Konstanta gravitasi universal (m^3 kg^-1 s^-2)
 
             // Skala: 1 pixel = 100 km
@@ -339,6 +340,7 @@
             const view3 = document.getElementById('view3');
             const rem1 = document.getElementById('rem1');
             const rem2 = document.getElementById('rem2');
+            const applyG = document.getElementById('applyG');
             // Status simulasi
             let isRunning = false;
             let requestId;
@@ -346,10 +348,11 @@
             // Fungsi menggambar objek
             stage = 0;
             tgV = 0;
+            lastfollow=0;
             function autoscale() {
                 // auto xw and yw and scale
                 scale = (10080 - getval("scale")) * 50;
-                rscale = 1.0 / scale;
+                
                 if (followsatelite == 1) {
                     xw = canvas.width / 2 - x2 * rscale;
                     // Posisi horizontal objek pertama (m)
@@ -361,12 +364,25 @@
                     // Posisi horizontal objek pertama (m)
                     yw = canvas.height / 2 - moony * rscale;
                     // Posisi vertikal objek pertama (m)
+                } else if (followsatelite == 4) {
+                    // follow moon
+                    // Posisi vertikal objek pertama (m)
+                    // special scale for sun
+                    scale=(-0.1*sunx/canvas.height)+1000*scale;
                 }
-
+                rscale = 1.0 / scale;
+                if (lastfollow!=4 && followsatelite==4)
+                {
+                  xw = canvas.width / 2 - sunx*0.5 * rscale;
+                  // Posisi horizontal objek pertama (m)
+                  yw = canvas.height / 2 - suny * rscale;
+                }
+                lastfollow=followsatelite;
             }
             runscript=0;
             numcalc=0;
             function reset() {
+                G=getval("cG");
                 satburn=0;
                 numcalc=0;
                 simtime=0;
@@ -417,11 +433,11 @@
                 var p2=[xw + (-sunx) * rscale, yw + (suny) * rscale,sunr1*rscale];
                 // dx dy 4 lines
               
-                const rs=0.01;
+                const rs=1;
                 var p3=[ [(p1[0]-p2[0])*rs,  (p1[1]- p1[2]-p2[1]+p2[2])*rs] ,
-                     [(p1[0]-p2[0])*rs,  (p1[1]+ p1[2]-p2[1]+p2[2])*rs],
-                     [(p1[0]-p2[0])*rs,  (p1[1]- p1[2]-p2[1]-p2[2])*rs],
-                     [(p1[0]-p2[0])*rs,  (p1[1]+ p1[2]-p2[1]-p2[2])*rs] ];
+                     [(p1[0]-p2[0])*rs,      (p1[1]+ p1[2]-p2[1]+p2[2])*rs],
+                     [(p1[0]-p2[0])*rs,      (p1[1]- p1[2]-p2[1]-p2[2])*rs],
+                     [(p1[0]-p2[0])*rs,      (p1[1]+ p1[2]-p2[1]-p2[2])*rs] ];
                 ;
                 
                 ctx.lineWidth = 1;
@@ -429,33 +445,33 @@
                 ctx.strokeStyle = 'yellow';
                 // from sun
                 ctx.moveTo(p1[0],p1[1]-p1[2]);
-                ctx.lineTo(p1[0]+p3[0][0],p1[1]-p1[2]+p3[0][1]);
+                ctx.lineTo(p1[0]+p3[0][0],p1[1]-p1[2]-p3[0][1]);
                 ctx.moveTo(p1[0],p1[1]-p1[2]);
-                ctx.lineTo(p1[0]+p3[2][0],p1[1]-p1[2]+p3[2][1]);
+                ctx.lineTo(p1[0]+p3[2][0],p1[1]-p1[2]-p3[2][1]);
 
                 ctx.moveTo(p1[0],p1[1]+p1[2]);
-                ctx.lineTo(p1[0]+p3[1][0],p1[1]+p1[2]+p3[1][1]);
+                ctx.lineTo(p1[0]+p3[1][0],p1[1]+p1[2]-p3[1][1]);
                 ctx.moveTo(p1[0],p1[1]+p1[2]);
-                ctx.lineTo(p1[0]+p3[3][0],p1[1]+p1[2]+p3[3][1]);
+                ctx.lineTo(p1[0]+p3[3][0],p1[1]+p1[2]-p3[3][1]);
                 // from obj
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.strokeStyle = '#888855';
-                
-
-                ctx.moveTo(p1[0],p1[1]-p1[2]);
-                ctx.lineTo(p1[0]-p3[0][0],p1[1]-p1[2]-p3[0][1]);
-                ctx.moveTo(p1[0],p1[1]+p1[2]);
-                ctx.lineTo(p1[0]-p3[3][0],p1[1]+p1[2]-p3[3][1]);
-                
                 ctx.stroke();
                 ctx.beginPath();
                 ctx.strokeStyle = '#555555';
                 
-                ctx.moveTo(p1[0],p1[1]+p1[2]);
-                ctx.lineTo(p1[0]-p3[1][0],p1[1]+p1[2]-p3[1][1]);
+
                 ctx.moveTo(p1[0],p1[1]-p1[2]);
-                ctx.lineTo(p1[0]-p3[2][0],p1[1]-p1[2]-p3[2][1]);
+                ctx.lineTo(p1[0]-p3[0][0],p1[1]-p1[2]+p3[0][1]);
+                ctx.moveTo(p1[0],p1[1]+p1[2]);
+                ctx.lineTo(p1[0]-p3[3][0],p1[1]+p1[2]+p3[3][1]);
+                
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.strokeStyle = '#888855';
+                
+                ctx.moveTo(p1[0],p1[1]+p1[2]);
+                ctx.lineTo(p1[0]-p3[1][0],p1[1]+p1[2]+p3[1][1]);
+                ctx.moveTo(p1[0],p1[1]-p1[2]);
+                ctx.lineTo(p1[0]-p3[2][0],p1[1]-p1[2]+p3[2][1]);
                 
                 
                 ctx.stroke();
@@ -469,6 +485,14 @@
                     ctx.fill();
 
                     autoscale();
+                    //if (followsatelite==4){
+                      p=[xw + sunx * rscale, yw + suny * rscale, sunr1 * rscale];
+                      ctx.beginPath();
+                      ctx.arc(p[0],p[1], p[2],0, Math.PI * 2);
+                      ctx.fillStyle = 'yellow';
+                      ctx.fill();
+                    //}
+                    
                     // Menggambar objek pertama (Bumi)
                     ctx.beginPath();
                     ctx.strokeStyle = 'black';
@@ -903,9 +927,13 @@
             );
             view3.addEventListener('click', ()=>{
                 followsatelite = 0;
-                xw = canvas.width / 2;
+                xw = canvas.width / 2+x1;
                 // Posisi horizontal objek pertama (m)
-                yw = canvas.height / 2;
+                yw = canvas.height / 2+y1;
+            }
+            );
+            view4.addEventListener('click', ()=>{
+                followsatelite = 4;
             }
             );
             rem1.addEventListener('click', ()=>{
@@ -918,6 +946,10 @@
                 moonmass = 1;
             }
             );
+            applyG.addEventListener('click', ()=>{
+                G = getval("cG");
+            }
+            );            
             // Function to handle the spacebar key press do rocket burn
             function handleSpacebarPress(event) {
                 // Check if the pressed key is the Spacebar (keyCode 32)
