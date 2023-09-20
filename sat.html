@@ -45,11 +45,10 @@
                     Masa L.M <input type=text id=sm size=5 value=15000>kg<br>
                     Daya Rk1  <input type=text id=f0 size=5 value=34000>kN<br>
                     Daya Rk1 <input type=text id=f1 size=5 value=2000>kN<br>
-                    
-                    
                     Alt Rk1 <input type=text id=h0 size=5 value=100>km<br>
                     Vel Rk2 <input type=text id=v0 size=5 value=30000>km/h<br>
                     Sep. brake <input type=text id=brake size=5 value=0.9>km/h<br>
+                    <input type=checkbox  id=trail1>Tampilkan trail<br>
                     </td><td>
                       R-Bumi <input type=text id=r1 size=5 value=6500>km<br>
                      Masa Bumi <input type=text id=mass size=5 value=6e24>kg<br>
@@ -577,6 +576,7 @@
                     
                 }
                 ctx.lineWidth = 1;
+                if ($("trail1").checked){
                 for (tr of trail) {
 
                     // Menggambar objek kedua (Objek bergerak)
@@ -607,6 +607,7 @@
                     ctx.stroke();
 
                 }
+              }
             }
 
             // Fungsi menghitung gaya gravitasi
@@ -651,7 +652,7 @@
               if (tidal.length==0)return;  
               // tidal force from moon
               ctx.beginPath();
-              ctx.strokeStyle = 'red"';
+              ctx.strokeStyle = "red";
               ctx.lineWidth = 1;//100000 * rscale;
               let t=tidal[0];
               let s=10000000.0/t[2][0];
