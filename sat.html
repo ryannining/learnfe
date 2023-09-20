@@ -63,6 +63,7 @@
                     <button id="view1">Lihat L.M</button>
                     <button id="view2">Lihat Bulan</button>
                     <button id="view3">Lihat Bumi</button>
+                    <button id="view4">Lihat Matahari</button>
                     <br>
                     <button id="rem1">Rem Bulan</button>
                     <button id="rem2">Buang Bulan</button>
@@ -74,7 +75,7 @@
                     Manual Tombol keyboard: <br>(1) Aktifkan roket searah <br>(2) Aktifkan roket lawan arah (rem) <br>(3) Aktifkan roket arah ke bulan
                     <br>(4/P)Pause
                     
-                    <hr><input type=checkbox checked=true id=cek1>Automatic Lunar module rocket activation script (time,key, duration)<br>
+                    <hr><input type=checkbox  id=cek1>Automatic Lunar module rocket activation script (time,key, duration)<br>
                     <textarea id="actionList" rows="5" cols="50" placeholder="Enter actions here (time,key, duration)">
 12800,1,15
 41500,1,25
@@ -92,7 +93,13 @@
 
 
 </textarea>
-<hr><input type=checkbox checked=true id=tidalforce>Visualisasikan Gaya Pasang surut (diskala supaya terlihat)
+<hr>
+<input type=checkbox checked=true id=tidalforce>Visualisasikan Gaya Pasang surut (diskala supaya terlihat)
+<br><input type=checkbox checked=true id=tidalmoon>Gaya dari bulan
+<br><input type=checkbox checked=true id=tidalsun>Gaya dari matahari
+<br><input type=checkbox checked=true id=tidalres>Gaya Resultan
+
+
 
                 </td>
             </tr>
@@ -206,6 +213,19 @@
             // Posisi horizontal awal objek kedua (m)
             y2 = y1;
             // Posisi vertikal awal objek kedua (m/s)
+            vx1=0;
+            vy1=0;
+            // rotasi bumi dan bulan
+            vro1=2*Math.PI/(24*3600);
+            ro1=0;
+            vro2=-2*Math.PI/(28*24*3600);
+            ro2=0;
+            sunx=-150000000000;
+            suny=0;
+            sunm1=1.98e30;
+            sunr1=1398000000/2;
+            
+            
             let vx2 = 0;
             // Kecepatan horizontal awal objek kedua (m/s)
             let vy2 = v2;
@@ -278,7 +298,8 @@
                 
                 h2 = getval("h0") * 1000;
                 h0 = 0;
-                y2 = y1 = x1 = 0;
+                ro2 = Math.PI;
+                ro1 = y2 = y1 = x1 = 0;
                 x2 = r1 + h0;
                 stage = 0;
                 // from land
@@ -304,6 +325,56 @@
                 trail = [];
                 cancelAnimationFrame(requestId);
             }
+            function drawLightTrace(xa,ya,p1){
+                // sun position
+                var p2=[xw + (-sunx) * rscale, yw + (suny) * rscale,sunr1*rscale];
+                // dx dy 4 lines
+              
+                const rs=0.01;
+                var p3=[ [(p1[0]-p2[0])*rs,  (p1[1]- p1[2]-p2[1]+p2[2])*rs] ,
+                     [(p1[0]-p2[0])*rs,  (p1[1]+ p1[2]-p2[1]+p2[2])*rs],
+                     [(p1[0]-p2[0])*rs,  (p1[1]- p1[2]-p2[1]-p2[2])*rs],
+                     [(p1[0]-p2[0])*rs,  (p1[1]+ p1[2]-p2[1]-p2[2])*rs] ];
+                ;
+                
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.strokeStyle = 'yellow';
+                // from sun
+                ctx.moveTo(p1[0],p1[1]-p1[2]);
+                ctx.lineTo(p1[0]+p3[0][0],p1[1]-p1[2]+p3[0][1]);
+                ctx.moveTo(p1[0],p1[1]-p1[2]);
+                ctx.lineTo(p1[0]+p3[2][0],p1[1]-p1[2]+p3[2][1]);
+
+                ctx.moveTo(p1[0],p1[1]+p1[2]);
+                ctx.lineTo(p1[0]+p3[1][0],p1[1]+p1[2]+p3[1][1]);
+                ctx.moveTo(p1[0],p1[1]+p1[2]);
+                ctx.lineTo(p1[0]+p3[3][0],p1[1]+p1[2]+p3[3][1]);
+                // from obj
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.strokeStyle = '#888855';
+                
+
+                ctx.moveTo(p1[0],p1[1]-p1[2]);
+                ctx.lineTo(p1[0]-p3[0][0],p1[1]-p1[2]-p3[0][1]);
+                ctx.moveTo(p1[0],p1[1]+p1[2]);
+                ctx.lineTo(p1[0]-p3[3][0],p1[1]+p1[2]-p3[3][1]);
+                
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.strokeStyle = '#555555';
+                
+                ctx.moveTo(p1[0],p1[1]+p1[2]);
+                ctx.lineTo(p1[0]-p3[1][0],p1[1]+p1[2]-p3[1][1]);
+                ctx.moveTo(p1[0],p1[1]-p1[2]);
+                ctx.lineTo(p1[0]-p3[2][0],p1[1]-p1[2]-p3[2][1]);
+                
+                
+                ctx.stroke();
+            }
+            
+            
             function drawObjects(i) {
                 if (i == 0) {
                     ctx.fillStyle = 'black';
@@ -313,24 +384,43 @@
                     autoscale();
                     // Menggambar objek pertama (Bumi)
                     ctx.beginPath();
-                    ctx.arc(xw + x1 * rscale, yw + y1 * rscale, r1 * rscale, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 1;
+                    p=[xw + x1 * rscale, yw + y1 * rscale, r1 * rscale];
+                    p1=p;
+                    ctx.arc(p[0],p[1], p[2],0, Math.PI * 2);
                     ctx.fillStyle = 'blue';
                     ctx.fill();
+                    ctx.moveTo(p[0],p[1]);
+                    ctx.lineTo(p[0]+Math.sin(ro1)*p[2],p[1]+Math.cos(ro1)*p[2]);
+                    ctx.stroke();
 
-                    // Menggambar objek pertama (Bumi)
+                    // Menggambar objek pertama (bulan)
                     ctx.beginPath();
-                    ctx.arc(xw + moonx * rscale, yw + moony * rscale, moonr * rscale, 0, Math.PI * 2);
+                    p=[xw + moonx * rscale, yw + moony * rscale, moonr * rscale];
+                    ctx.arc(p[0],p[1],p[2], 0,Math.PI * 2);
                     ctx.fillStyle = 'gray';
                     ctx.fill();
+                    
+                    ctx.moveTo(p[0],p[1]);
+                    ctx.lineTo(p[0]+Math.sin(ro2)*p[2],p[1]+Math.cos(ro2)*p[2]);
+                    ctx.stroke();
+                    
+                    // garis dari matahari ke bulan
+                    drawLightTrace(moonx,moony,p);
+                    drawLightTrace(x1,y1,p1);
+                    
+                    
                 }
+                
                 // Menggambar objek kedua (Objek bergerak)
                 ctx.beginPath();
                 ctx.arc(xw + x2 * rscale, yw + y2 * rscale, 20000 * rscale, 0, Math.PI * 2);
                 ctx.fillStyle = satburn?'orange':'gray';
                 ctx.fill();
-                if (satburn) {
+                if (isRunning && ( satburn || stage<2)) {
                   ctx.beginPath();
-                  ctx.arc(30, 30, 10, 0, Math.PI * 2);
+                  ctx.arc(40, 40, 40-20*stage, 0, Math.PI * 2);
                   ctx.fillStyle = 'orange';
                   ctx.fill();
                 }
@@ -408,38 +498,83 @@
             function calculateTidal(){
               // titik tengah earth
               tidal=[];
-              tidal.push([0,0,Gravity([0,0,m1],[moonx,moony,moonmass])]);
+              tidal.push([0,0,Gravity([x1,y1,m1],[moonx,moony,moonmass]),Gravity([x1,y1,m1],[sunx,suny,sunm1])]);
               // data dari permukaan dibagi menjadi per 2 derajat 
               for (var i=0;i<180;i++){
                 let a=4*Math.PI*i/360;
-                x=Math.sin(a)*r1;
-                y=Math.cos(a)*r1,m1;
+                x=Math.sin(a)*r1+x1;
+                y=Math.cos(a)*r1+y1;
                 var F=Gravity([x,y,m1],[moonx,moony,moonmass]);
-                tidal.push([x,y,F]); //[force,distance,angle]
+                var F2=Gravity([x,y,m1],[sunx,suny,sunm1]);
+                
+                tidal.push([x,y,F,F2]); //[force,distance,angle]
               }
               
             }
             
             function drawTidalForce(){
               if (!$('tidalforce').checked)return;
-              calculateTidal();
-
+              if (isRunning)calculateTidal();
+              if (tidal.length==0)return;  
+              // tidal force from moon
               ctx.beginPath();
-              ctx.strokeStyle = 'gray';
+              ctx.strokeStyle = 'red"';
               ctx.lineWidth = 1;//100000 * rscale;
               let t=tidal[0];
               let s=10000000.0/t[2][0];
               let fx0 = s*t[2][0] * Math.cos(t[2][2]);
               let fy0 = s*t[2][0] * Math.sin(t[2][2]);
+              let fx0a = s*t[3][0] * Math.cos(t[3][2]);
+              let fy0a = s*t[3][0] * Math.sin(t[3][2]);
+              
+              resultan=[];
+              vie1= $('tidalmoon').checked;
+              vie2= $('tidalsun').checked;
+              vie3= $('tidalres').checked;
               for (var i=1;i<tidal.length;i++){
                 let t=tidal[i];
                 let x=t[0];
                 let y=t[1];
                 let fx = fx0-s*t[2][0] * Math.cos(t[2][2]);
                 let fy = fy0-s*t[2][0] * Math.sin(t[2][2]);
-                
-                ctx.moveTo(xw + x * rscale, yw + y * rscale);
-                ctx.lineTo(xw + x * rscale - fx * rscale , yw + y * rscale - fy * rscale );
+                let p=[xw + x * rscale, yw + y * rscale];
+                if (vie1){
+                  ctx.moveTo(p[0],p[1]);
+                  ctx.lineTo(p[0] - fx * rscale , p[1] - fy * rscale );
+                }
+                resultan.push([p,fx,fy]);
+              }
+              ctx.stroke();
+              // tidal force from sun
+              ctx.beginPath();
+              ctx.strokeStyle = 'yellow';
+              ctx.lineWidth = 1;//100000 * rscale;
+              for (var i=1;i<tidal.length;i++){
+                r=resultan[i-1];
+                let t=tidal[i];
+                let fx = fx0a-s*t[3][0] * Math.cos(t[3][2]);
+                let fy = fy0a-s*t[3][0] * Math.sin(t[3][2]);
+                r[1]+=fx;
+                r[2]+=fy;
+                if (vie2){
+                  let p=r[0];
+                  ctx.moveTo(p[0],p[1]);
+                  ctx.lineTo(p[0] - fx * rscale , p[1] - fy * rscale );
+                }
+              }
+              ctx.stroke();
+              if (!vie3)return;
+              // tidal force resultan
+              ctx.beginPath();
+              ctx.strokeStyle = '#ffffff88';
+              ctx.lineWidth = 2;//100000 * rscale;
+              for (var i=1;i<tidal.length;i++){
+                r=resultan[i-1];
+                let p=r[0];
+                let fx=r[1];
+                let fy=r[2];
+                ctx.moveTo(p[0],p[1]);
+                ctx.lineTo(p[0] - fx * rscale , p[1] - fy * rscale );
               }
               ctx.stroke();
             }
@@ -455,8 +590,16 @@
                 moonvx += (fx / moonmass);
                 moonvy += (fy / moonmass);
                 // S = S0 + V
-                moonx += moonvx * 1;
-                moony += moonvy * 1;
+                moonx += moonvx;
+                moony += moonvy;
+                
+                // bumi juga aslinya bergerak
+                // V = V0 + a
+                vx1 -= (fx / m1);
+                vy1 -= (fy / m1);
+                // S = S0 + V
+                x1 += vx1;
+                y1 += vy1;
             }
             
             function rocketBody() {
@@ -541,8 +684,8 @@
                     vy3 *= brake;
 
                 }
-                x2 += vx2 * 1;
-                y2 += vy2 * 1;
+                x2 += vx2;
+                y2 += vy2;
 
                 // body rocket
                 pushtrail([x2, y2, vx2, vy2, stage == 0 ? -rocketF1 : rfx, rfy, fx, fy]);
@@ -586,6 +729,9 @@
                       } else if (stage == 2) {}
                       //i=0;
                       calculateGravity();
+                      // body rotation
+                      ro1+=vro1;
+                      ro2+=vro2;
                       
                       burntime--;
                       if (burntime<0){
