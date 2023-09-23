@@ -49,7 +49,7 @@
                     Alt Rk1 <input type=text id=h0 size=5 value=100>km<br>
                     Vel Rk2 <input type=text id=v0 size=5 value=30000>km/h<br>
                     Sep. brake <input type=text id=brake size=5 value=0.9>km/h<br>
-                    <input type=checkbox  id=trail1>Tampilkan trail<br>
+                    <input type=checkbox  checked id=trail1>Tampilkan trail<br>
                     </td><td>
                       R-Bumi <input type=text id=r1 size=5 value=6500>km<br>
                      Masa Bumi <input type=text id=mass size=5 value=6e24>kg<br>
@@ -141,7 +141,7 @@
               const dz = lightVector[2];
               ctx.beginPath();
               c1 = `rgb(${colb[0]},${colb[1]},${colb[2]},0.5)`;
-              ctx.fillStyle='black';
+              ctx.fillStyle='#000020';
               ctx.fillRect(0, 0, canvas.width, canvas.height);
               ctx.fill();
 
@@ -177,7 +177,7 @@
                 }
               }
               ctx.beginPath();
-              ctx.strokeStyle = 'black';
+              ctx.strokeStyle = '#000020';
               ctx.lineWidth=sc+2;
               ctx.arc(x, y, radius,0,Math.PI*2);
               ctx.stroke();
@@ -937,13 +937,13 @@
                 }
                 // Menggambar info matahari
                 ctx.beginPath();
-                ctx.arc(1150,370, 25,0, Math.PI * 2);
+                ctx.arc(1050,50, 25,0, Math.PI * 2);
                 ctx.fillStyle = 'orange';
                 ctx.fill();
                 ctx.beginPath();
                 ctx.fillStyle = 'White';
                 angularsun=getAngularSize(sunx,suny,sunr1);
-                ctx.fillText("Matahari "+angularsun+"°",1118,370);
+                ctx.fillText("Matahari "+angularsun+"°",1018,15);
                 ctx.fill();
                 
                 $("data").innerHTML = "SIMTIME:"+simtime+"<br># Gravity calculation:"+numcalc+"<br>V:" + theV + "km/h  H:" + Math.round(hc / 1000) + "km  F:" + Math.round(theF / 1000) + "kN  A:" + Math.round(theA) + "m/s^2";
