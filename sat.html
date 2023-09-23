@@ -109,8 +109,8 @@
 <br><input type=checkbox checked id=tidalsun>Gaya dari matahari (kuning)
 <br><input type=checkbox  id=tidalres>Gaya Resultan (abu2)
 <hr>
-<br><input type=checkbox checked id=fase1>Fase bulan dilihat dari bumi
-<br><input type=checkbox checked id=fase2>Fase bumi dilihat dari bulan/<input type=checkbox checked id=fase3>Fase bumi dilihat dari satelit
+<br><input type=checkbox checked id=fase1>Fase bulan dilihat dari bumi/<input type=checkbox checked id=fase3>dari L.M
+<br><input type=checkbox checked id=fase2>Fase bumi dilihat dari bulan/<input type=checkbox checked id=fase4>dari L.M
 <br>Info Ukuran sudut benda memakai rumus:
 <i>2 * atan(objekRadius / Jarak)</i>
 
@@ -776,7 +776,7 @@
             
 
             var angularsun=0.5;
-            var lmangle=0;
+            var lmangle=lmangle2=0;
             function calculateGravity() {
                 ms=0;
                 if (stage==0)ms = rm1+rm2+satm;
@@ -814,6 +814,7 @@
                       }
 
                       [force2,distance2,angle2]=Gravity([moonx,moony,moonmass],[x2,y2,ms]);
+                      lmangle2=angle2;
                       
                       if (satburn==3)force2+=rocketF3; // rocket with direction to moon 
                       
@@ -857,7 +858,7 @@
             function getAngularSize(x,y,r) {
               
               // Calculate angular size in radians
-              dis=Math.sqrt((x1-x)**2 + (y1-y)**2);
+              dis=Math.sqrt(x**2 + y**2);
               const angularSize = 2 * Math.atan(r / ( dis));
 
               return (angularSize*180/Math.PI).toFixed(2);
@@ -907,28 +908,36 @@
                   }  
                 drawObjects(0);
                 drawTidalForce();
-                if ($("fase1").checked){
+                if ($("fase3").checked){
+                  // moon phase dikalkulasi dari sudut bulan dan sudu sinar matahari
+                  phase=lmangle2-Math.PI/2;
+                  // angular size
+                  colb= [0,0,0];
+                  angsize=getAngularSize(x2-moonx,y2-moony,moonr);
+                  renderPhase('canvas2',50, 50, 25, colb,[150,150,150],[-Math.cos(phase),0,Math.sin(phase)],"LM->Bulan "+angsize+"°");
+                } else if ($("fase1").checked){
                   // moon phase dikalkulasi dari sudut bulan dan sudu sinar matahari
                   phase=moonangle+Math.PI/2;
                   // langit dipandang dari pengamat, bulan mati diamati siang hari misalnya
                   colb= calculateColorWithExposure(50, 100, 255, Math.max(0,-Math.sin(phase)));
                   // angular size
-                  angsize=getAngularSize(moonx,moony,moonr);
+                  angsize=getAngularSize(x1-moonx,y1-moony,moonr);
                   renderPhase('canvas2',50, 50, 25*angsize/angularsun, colb,[150,150,150],[-Math.cos(phase),0,Math.sin(phase)],"Bulan "+angsize+"°");
+                
                 }
-                if ($("fase3").checked){
+                if ($("fase4").checked){
                   // fase bumi diamati dari bulan
                   phase=lmangle+Math.PI/2;
                   // langit gelap karena tanpa atmosfer
                   colb= [0,0,0];
-                  angsize=getAngularSize(x2,y2,r1);
-                  renderPhase('canvas3',100, 100, 80, colb,[100,150,255],[Math.cos(phase),0,-Math.sin(phase)],"Bumi "+angsize+"°");
+                  angsize=getAngularSize(x2-x1,y2-y1,r1);
+                  renderPhase('canvas3',100, 100, 80, colb,[100,150,255],[Math.cos(phase),0,-Math.sin(phase)],"LM->Bumi "+angsize+"°");
                 }else if ($("fase2").checked){
                   // fase bumi diamati dari bulan
                   phase=moonangle+Math.PI/2;
                   // langit gelap karena tanpa atmosfer
                   colb= [0,0,0];
-                  angsize=getAngularSize(moonx,moony,r1);
+                  angsize=getAngularSize(x1-moonx,y1-moony,r1);
                   renderPhase('canvas3',100, 100, 20*angsize/angularsun, colb,[100,150,255],[Math.cos(phase),0,-Math.sin(phase)],"Bumi "+angsize+"°");
                 }
                 // Menggambar info matahari
@@ -962,6 +971,7 @@
             );
                         // Event listener untuk tombol Start
             start2Btn.addEventListener('click', ()=>{
+              $("pause0").style.display="None";
                 reset();
                 drawObjects();
                 isRunning = true;
