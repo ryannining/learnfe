@@ -73,7 +73,7 @@
                     <button id="view1">Lihat L.M</button>
                     <button id="view2">Lihat Bulan</button>
                     <button id="view3">Lihat Bumi</button>
-                    <button id="view4">Lihat Matahari</button>
+                    <button id="view4">Lihat Semua</button>
                     <br>
                     <button id="rem1">Rem Bulan</button>
                     <button id="rem2">Buang Bulan</button>
@@ -104,7 +104,7 @@
 <br><input type=checkbox checked id=tidalsun>Gaya dari matahari (kuning)
 <br><input type=checkbox  id=tidalres>Gaya Resultan (abu2)
 <hr>
-<br><input type=checkbox checked id=fase1>Fase bulan dilihat dari bumi/<input type=checkbox checked id=fase3>dari L.M
+<br><input type=checkbox checked id=fase1>Fase bulan dilihat dari bumi/<input type=checkbox xchecked id=fase3>dari L.M
 <br><input type=checkbox checked id=fase2>Fase bumi dilihat dari bulan/<input type=checkbox checked id=fase4>dari L.M
 <br>Info Ukuran sudut benda memakai rumus:
 <i>2 * atan(objekRadius / Jarak)</i>
@@ -370,14 +370,14 @@
                     // follow moon
                     // Posisi vertikal objek pertama (m)
                     // special scale for sun
-                    scale=(-0.1*sunx/canvas.height)+1000*scale;
+                    scale=(-0.01*sunx/canvas.height)+100*scale;
                 }
                 rscale = 1.0 / scale;
                 if (lastfollow!=4 && followsatelite==4)
                 {
-                  xw = canvas.width / 2 - sunx*0.5 * rscale;
+                  xw = canvas.width / 2 - moonx*0.5 * rscale;
                   // Posisi horizontal objek pertama (m)
-                  yw = canvas.height / 2 - suny * rscale;
+                  yw = canvas.height / 2 - moony * rscale;
                 }
                 lastfollow=followsatelite;
             }
@@ -430,7 +430,7 @@
 
                 cancelAnimationFrame(requestId);
             }
-            function drawLightTrace(xa,ya,p1){
+            function drawLightTrace(xa,ya,p1,p4){
                 // sun position
                 var p2=[xw + (-sunx) * rscale, yw + (suny) * rscale,sunr1*rscale];
                 // dx dy 4 lines
@@ -442,7 +442,7 @@
                      [(p1[0]-p2[0])*rs,      (p1[1]+ p1[2]-p2[1]-p2[2])*rs] ];
                 ;
                 
-                ctx.lineWidth = 1;
+                ctx.lineWidth = Math.min(1,1440000* rscale);
                 ctx.beginPath();
                 ctx.strokeStyle = 'yellow';
                 // from sun
@@ -465,6 +465,20 @@
                 ctx.lineTo(p1[0]-p3[0][0]*0.01,p1[1]-p1[2]+p3[0][1]*0.01);
                 ctx.moveTo(p1[0],p1[1]+p1[2]);
                 ctx.lineTo(p1[0]-p3[3][0]*0.01,p1[1]+p1[2]+p3[3][1]*0.01);
+                if (!(p4 === undefined)) {
+                  var inshadow=!isCircleUnderLine(p4[0],p4[1],p4[2],
+                                                p1[0],p1[1]-p1[2],p1[0]-p3[0][0]*0.01,p1[1]-p1[2]+p3[0][1]*0.01) 
+                                                && 
+                              isCircleUnderLine(p4[0],p4[1],p4[2],
+                                                p1[0],p1[1]+p1[2],
+                                                p1[0]-p3[3][0]*0.01,p1[1]+p1[2]+p3[3][1]*0.01 );    
+                  mooninshadow=earthinshadow=false;
+                  if (inshadow) {
+                     const ma=Math.floor(moonangle*10);
+                     earthinshadow=(ma>15) && (ma<46);
+                     mooninshadow=!earthinshadow;
+                  }
+                }  
                 
                 ctx.stroke();
                 ctx.beginPath();
@@ -477,6 +491,7 @@
                 
                 
                 ctx.stroke();
+                //return inshadow;
             }
             
             
@@ -503,7 +518,7 @@
                     p=[xw + x1 * rscale, yw + y1 * rscale, r1 * rscale];
                     p1=p;
                     ctx.arc(p[0],p[1], p[2],0, Math.PI * 2);
-                    ctx.fillStyle = 'blue';
+                    ctx.fillStyle = earthinshadow?'#223366':'blue';
                     ctx.fill();
                     ctx.beginPath();
                     
@@ -522,7 +537,7 @@
                     ctx.strokeStyle = 'black'; 
                     p=[xw + moonx * rscale, yw + moony * rscale, moonr * rscale];
                     ctx.arc(p[0],p[1],p[2], 0,Math.PI * 2);
-                    ctx.fillStyle = 'gray';
+                    ctx.fillStyle = mooninshadow?'#282828':'gray';
                     ctx.fill();
                     ctx.beginPath();
                     ctx.arc(p[0],p[1],p[2], Math.PI*1.5, Math.PI/2);
@@ -536,7 +551,7 @@
                     
                     // garis dari matahari ke bulan
                     drawLightTrace(moonx,moony,p);
-                    drawLightTrace(x1,y1,p1);
+                    drawLightTrace(x1,y1,p1,p);
                     
                     
                 }
@@ -613,7 +628,24 @@
             theF = 0;
             theA = 0;
             tgV = 0;
+            mooninshadow=0;
+            earthinshadow=0;
+            function isCircleUnderLine(circleCenterX, circleCenterY, circleRadius, lineStartX, lineStartY, lineEndX, lineEndY) {
+              // Calculate the y-coordinate of the line at the circle's x-coordinate
+              const slope = (lineEndY - lineStartY) / (lineEndX - lineStartX);
+              const lineY = slope * (circleCenterX - lineStartX) + lineStartY;
 
+              // Calculate the range of y-values that are considered "under" the line
+              const minY = lineY + circleRadius;
+
+              // Check if the circle's center is below the line
+              return circleCenterY < minY;
+            }
+            var slowcheck=0;
+            function shadowcheck(){
+
+            }
+            G = 6.67430e-11;
             function Gravity(A,B) {
                 numcalc++;
                 let dx = B[0] - A[0];
@@ -909,7 +941,7 @@
                   // angular size
                   colb= [0,0,0];
                   angsize=getAngularSize(x2-moonx,y2-moony,moonr);
-                  renderPhase('canvas2',50, 50, 25, colb,[150,150,150],[-Math.cos(phase),0,Math.sin(phase)],"LM->Bulan "+angsize+"°");
+                  renderPhase('canvas2',50, 50, 25, colb,mooninshadow?[50,50,50]:[150,150,150],[-Math.cos(phase),0,Math.sin(phase)],"LM->Bulan "+angsize+"°");
                 } else if ($("fase1").checked){
                   // moon phase dikalkulasi dari sudut bulan dan sudu sinar matahari
                   phase=moonangle+Math.PI/2;
@@ -917,7 +949,7 @@
                   colb= calculateColorWithExposure(50, 100, 255, Math.max(0,-Math.sin(phase)));
                   // angular size
                   angsize=getAngularSize(x1-moonx,y1-moony,moonr);
-                  renderPhase('canvas2',50, 50, 25*angsize/angularsun, colb,[150,150,150],[-Math.cos(phase),0,Math.sin(phase)],"Bulan "+angsize+"°");
+                  renderPhase('canvas2',50, 50, 25*angsize/angularsun, earthinshadow?[0,0,0]:colb,[150,150,150],[-Math.cos(phase),0,Math.sin(phase)],"Bulan "+angsize+"°");
                 
                 }
                 if ($("fase4").checked){
