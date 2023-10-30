@@ -101,7 +101,7 @@
 <hr>
 <input type=checkbox checked=true id=tidalforce>Visualisasikan Gaya Pasang surut (diskala supaya terlihat)
 <br><input type=checkbox checked id=tidalmoon>Gaya dari bulan (merah)
-<br><input type=checkbox checked id=tidalsun>Gaya dari matahari (kuning)
+<br><input type=checkbox xchecked id=tidalsun>Gaya dari matahari (kuning)
 <br><input type=checkbox  id=tidalres>Gaya Resultan (abu2)
 <hr>
 <br><input type=checkbox checked id=fase1>Fase bulan dilihat dari bumi/<input type=checkbox xchecked id=fase3>dari L.M
@@ -149,7 +149,7 @@
               //ctx.arc(x, y, radius,0,Math.PI*2);
               //ctx.fill();
               scd=Math.floor(radius/20);
-              sc=scd*2;
+              sc=Math.max(1,scd*2);
               wd=Math.ceil(radius/sc);   
               for(let i = -wd; i < wd; i++) {
                 for(let j = -wd; j < wd; j++) {
@@ -375,9 +375,9 @@
                 rscale = 1.0 / scale;
                 if (lastfollow!=4 && followsatelite==4)
                 {
-                  xw = canvas.width / 2 - moonx*0.5 * rscale;
+                  xw = canvas.width / 2 - 0*0.5 * rscale;
                   // Posisi horizontal objek pertama (m)
-                  yw = canvas.height / 2 - moony * rscale;
+                  yw = canvas.height / 2 - 0 * rscale;
                 }
                 lastfollow=followsatelite;
             }
@@ -965,7 +965,7 @@
                   // langit gelap karena tanpa atmosfer
                   colb= [0,0,0];
                   angsize=getAngularSize(x1-moonx,y1-moony,r1);
-                  renderPhase('canvas3',100, 100, 20*angsize/angularsun, colb,[100,150,255],[Math.cos(phase),0,-Math.sin(phase)],"Bumi "+angsize+"°");
+                  renderPhase('canvas3',100, 100, 20, colb,[100,150,255],[Math.cos(phase),0,-Math.sin(phase)],"Bumi "+angsize+"°");
                 }
                 // Menggambar info matahari
                 ctx.beginPath();
