@@ -977,8 +977,8 @@
                 angularsun=getAngularSize(sunx,suny,sunr1);
                 ctx.fillText("Matahari "+angularsun+"°",1018,15);
                 ctx.fill();
-                
-                $("data").innerHTML = "SIMTIME:"+simtime+"<br># Gravity calculation:"+numcalc+"<br>V:" + theV + "km/h  H:" + Math.round(hc / 1000) + "km  F:" + Math.round(theF / 1000) + "kN  A:" + Math.round(theA) + "m/s^2";
+                let md=Math.sqrt((x1-moonx)**2+(y1-moony)**2);
+                $("data").innerHTML = "SIMTIME:"+simtime+"<br># Gravity calculation:"+numcalc+"<br>V:" + theV + "km/h  H:" + Math.round(hc / 1000) + "km  F:" + Math.round(theF / 1000) + "kN  A:" + Math.round(theA) + "m/s^2<br>Jarak bulan:"+(md/1000).toFixed(0)+"km";
       
                 requestId = requestAnimationFrame(update1);
             }
