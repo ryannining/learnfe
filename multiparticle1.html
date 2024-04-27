@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+  </style>
+</head>
+<body><center>
+  <div>
+    <label for="grav">Gravity value</label>
+    <input type="number" id="grav" value="1" min="0" max=100 step="1">
+    <br>
+    Particle Mass-SIze<br>
+    <label for="massInput1" style="color:red">Particle 1:</label>
+    <input id="massInput1" value="1" size=4 col=2 min="1" step="1"><input id="size1" size=2 value="5" min="1" step="1">
+    <br>
+    <label for="massInput2"style="color:green" >Particle 2:</label>
+    <input id="massInput2" value="1" size=4 min="1" step="1"><input id="size2" size=2 value="5" min="1" step="1">
+    <br>
+    <label for="massInput3"style="color:blue" >Particle 3:</label>
+    <input id="massInput3" value="1" size=4  min="1" step="1"><input  id="size3" size=2 value="5" min="1" step="1">
+    <br>
+    <button onclick="resetSim()">Reset Simulation</button>
+  </div>  
+  <canvas id="canvas" width="700" height="700"></canvas>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const WID = canvas.width;
+    const HEI = canvas.height;
+    const EX1 = -100;
+    const EX2 = 100;
+    const EY1 = -300;
+    const EY2 = 300;
+    
+    const N_PARTICLES = 300;
+    let G = 0.01;
+    let particles = [];
+    let planet;
+    let moon;
+    let rot1;
+    let random = Math.random;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let translateX = WID/2;
+    let translateY = HEI/2;
+    
+    let scale = 1;
+        let momentumValues=[];
+        let barmax=0;
+    function resetSim(){
+      const mass1 = parseFloat(document.getElementById('massInput1').value)*20;
+      const mass2 = parseFloat(document.getElementById('massInput2').value)*20;
+      const mass3 = parseFloat(document.getElementById('massInput3').value)*20;
+      const sz1 = parseFloat(document.getElementById('size1').value)*0.5;
+      const sz2 = parseFloat(document.getElementById('size2').value)*0.5;
+      const sz3 = parseFloat(document.getElementById('size3').value)*0.5;
+      G = parseFloat(document.getElementById('grav').value)*0.001;
+      barmax=0;
+      momentumValues=[];
+      particles = [];
+      for (let n = 0; n < N_PARTICLES/sz1; n++) {
+        particles.push(new Particle(new Vector(random() * 150 - 75, random() * 150 - 75), sz1, mass1,'#ff0000'));
+      }
+      for (let n = 0; n < N_PARTICLES/sz2; n++) {
+        particles.push(new Particle(new Vector(random() * 150 - 75, random() * 150 - 75), sz2, mass2,'#00ff00'));
+      }
+      for (let n = 0; n < N_PARTICLES/sz3; n++) {
+        particles.push(new Particle(new Vector(random() * 150 - 75, random() * 150 - 75), sz3, mass3,'#0000ff'));
+      }
+    }
+    function setup() {
+      canvas.width = WID;
+      canvas.height = HEI;
+      resetSim();
+// Mouse event listeners
+      canvas.addEventListener('mousedown', onMouseDown);
+      canvas.addEventListener('mouseup', onMouseUp);
+      canvas.addEventListener('mousemove', onMouseMove);
+
+      // Wheel event listener
+      canvas.addEventListener('wheel', onWheel);
+    }
+
+    function onMouseDown(event) {
+      isDragging = true;
+      startX = event.clientX - translateX;
+      startY = event.clientY - translateY;
+    }
+
+    function onMouseUp(event) {
+      isDragging = false;
+    }
+
+    function onMouseMove(event) {
+      if (isDragging) {
+        translateX = event.clientX - startX;
+        translateY = event.clientY - startY;
+      }
+    }
+
+    function onWheel(event) {
+      const scaleFactor = 1.1;
+      if (event.deltaY < 0) {
+        scale *= scaleFactor;
+      } else {
+        scale /= scaleFactor;
+      }
+    }
+
+  function drawHistogram() {
+      for (let i = 0; i < momentumValues.length; i++) {
+          let bar = momentumValues[i]; // Scale the height for better visualization
+          if (bar==undefined)bar=0;
+          barmax=Math.max(barmax,bar);
+          
+          if (barmax>100)bar=bar*100/barmax;
+          const xPos = EX1-bar;
+          const yPos = EY2 - i*20-20;
+          ctx.fillStyle = "cyan";
+          ctx.fillRect(xPos, yPos, bar, 18);
+      }
+  }    
+
+    function draw() {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = "rgba(0,50,0,1)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(scale, scale);
+      ctx.translate(translateX, translateY);
+      ctx.beginPath();
+      //ctx.translate(translateX, translateY);
+      ctx.fill();
+      for (let j=0;j<10;j++){
+      ctx.fillStyle = "rgba(30,30,30,0.1)";
+      ctx.fillRect(EX1, EY1, EX2-EX1, EY2-EY1);
+        for (let p of particles) {          
+          p.checkCollision(particles);
+          p.checkEdges();
+          p.updateState();
+          ctx.fillStyle = "white";
+          p.display();
+        }
+      }
+      drawHistogram();
+      requestAnimationFrame(draw);
+    }
+
+    
+    class Particle {
+      constructor(pos, r, m,c) {
+        this.pos = pos;
+        this.color=c;
+        this.velocity = new Vector(random()*2-1, random()*2-1);
+        this.acceleration = new Vector(0, 0);
+        this.mass = m;
+        this.radius = r;
+        this.maxSpeed = 7;
+        this.angle = 0;
+      }
+
+      applyGravity(target) {
+        
+        const force = new Vector(target.pos.x - this.pos.x, target.pos.y - this.pos.y);
+        let distance = force.magnitude();
+
+        force.normalize();
+        const strength = (G * this.mass * target.mass) / (distance * distance);
+        force.mult(strength);
+        this.acceleration.add(force);
+      }
+      checkEdges() {
+        if (this.pos.y - this.radius < EY1) {
+          this.pos.y = EY1+this.radius;
+          this.velocity.y *= -1;
+        } else if (this.pos.y + this.radius > EY2) {
+          this.pos.y = EY2 - this.radius;
+          this.velocity.y *= -1;
+        }
+        let ji=Math.floor((EY2-this.pos.y)/20);
+        let n=momentumValues[ji];
+        if (n==undefined)n=0;
+        if (this.pos.x - this.radius < EX1) {
+          this.pos.x = EX1+this.radius;
+          this.velocity.x *= -1;
+          n+=this.velocity.x*this.mass;
+        } else if (this.pos.x + this.radius > EX2) {
+          this.pos.x = EX2 - this.radius;
+          n+=this.velocity.x*this.mass;
+          this.velocity.x *= -1;
+        }
+        momentumValues[ji]=n;
+      }
+      updateState() {
+        this.acceleration.y+=G; // gravity down
+        this.velocity.add(this.acceleration);
+        let v=this.velocity.magnitude();
+        if (v>3)this.velocity.mult(3/v);
+        this.pos.add(this.velocity);
+        this.acceleration.mult(0);
+      }
+      checkCollision(others) {
+          for (let other of others) {
+              if (this != other) {
+                  const distance = this.pos.distance(other.pos);
+                  const minDistance = this.radius + other.radius;
+
+                  if (distance <= minDistance) {
+                      // Calculate collision normal
+                      const normal = new Vector(other.pos.x - this.pos.x, other.pos.y - this.pos.y).normalize();
+
+                      // Calculate relative velocity
+                      const relativeVelocity = new Vector(other.velocity.x - this.velocity.x, other.velocity.y - this.velocity.y);
+
+                      // Calculate relative velocity in the direction of the normal
+                      const velAlongNormal = Vector.dot(relativeVelocity, normal);
+
+                      // If velocities are separating, do not apply collision
+                      if (velAlongNormal > 0) {
+                          continue;
+                      }
+
+                      // Calculate restitution
+                      const restitution = 1; // Perfectly elastic collision
+
+                      // Calculate impulse scalar
+                      let j = -(1 + restitution) * velAlongNormal;
+                      j /= 1 / this.mass + 1 / other.mass;
+
+                      // Apply impulse
+                      const impulse = normal.nmult(j);
+                      this.velocity.sub(impulse.nmult(1 / this.mass));
+                      other.velocity.add(impulse.nmult(1 / other.mass));
+
+                      // Separate colliding particles
+                      const overlap = minDistance - distance;
+                      const separation = normal.nmult(overlap / (this.mass + other.mass));
+                      this.pos.sub(separation.nmult(1 / this.mass));
+                      other.pos.add(separation.nmult(1 / other.mass));
+                  }
+              }
+          }
+      }
+
+      checkCollision1(others) {
+        for (let other of others) {
+          if (this != other) {
+            const distance = this.pos.distance(other.pos);
+            const minDistance = this.radius + other.radius;
+
+            if (distance <= minDistance) {
+              const normal = new Vector(other.pos.x - this.pos.x, other.pos.y - this.pos.y).normalize();
+              const relativeVelocity = new Vector(other.velocity.x - this.velocity.x, other.velocity.y - this.velocity.y);
+              const impulse = normal.nmult(2 * Vector.dot(relativeVelocity, normal) / (this.mass + other.mass));
+              const repulsion = normal.nmult(minDistance - distance);
+              
+              this.velocity.add(impulse.nmult(1 / this.mass));
+              other.velocity.sub(impulse.nmult(1 / other.mass));
+
+              this.pos.sub(repulsion.nmult(1 / this.mass));
+              other.pos.add(repulsion.nmult(1 / other.mass));
+            }
+          }
+        }
+      }
+
+      display() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.pos.x, this.pos.y, this.radius, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    }
+
+    class Vector {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+      }
+
+      magnitude() {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+      }
+
+      normalize() {
+        const magnitude = this.magnitude();
+        this.x /= magnitude;
+        this.y /= magnitude;
+        return this;
+      }
+
+      mult(scalar) {
+        this.x *= scalar;
+        this.y *= scalar;
+        return this;
+      }
+
+      nmult(scalar) {
+        return new Vector(this.x * scalar, this.y * scalar);
+      }
+
+      add(other) {
+        this.x += other.x;
+        this.y += other.y;
+      }
+
+      sub(other) {
+        this.x -= other.x;
+        this.y -= other.y;
+      }
+
+      static dot(a, b) {
+        return a.x * b.x + a.y * b.y;
+      }
+
+      distance(other) {
+        return Math.sqrt(Math.pow(this.x - other.x, 2) + Math.pow(this.y - other.y, 2));
+      }
+    }
+    
+
+    setup();
+    requestAnimationFrame(draw);
+  </script>
+</body>
+</html>
