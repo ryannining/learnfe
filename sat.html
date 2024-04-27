@@ -370,7 +370,7 @@
                     // follow moon
                     // Posisi vertikal objek pertama (m)
                     // special scale for sun
-                    scale=(-0.01*sunx/canvas.height)+100*scale;
+                    scale=(-0.01*sunx/canvas.height)+300*scale;
                 }
                 rscale = 1.0 / scale;
                 if (lastfollow!=4 && followsatelite==4)
@@ -442,7 +442,7 @@
                      [(p1[0]-p2[0])*rs,      (p1[1]+ p1[2]-p2[1]-p2[2])*rs] ];
                 ;
                 
-                ctx.lineWidth = Math.min(1,1440000* rscale);
+                ctx.lineWidth = Math.max(0.1,Math.min(1,1440000* rscale));
                 ctx.beginPath();
                 ctx.strokeStyle = 'yellow';
                 // from sun
@@ -645,6 +645,7 @@
             function shadowcheck(){
 
             }
+            // fungsi rumus universal gravitasi antara 2 objek
             G = 6.67430e-11;
             function Gravity(A,B) {
                 numcalc++;
@@ -656,6 +657,33 @@
                 let Vectorangle = Math.atan2(dy, dx);
                 return [force,distance,Vectorangle]
             }
+            
+            
+            var moonangle=0;
+            function calculateMoon() {
+                // calculate moon gravity to earth
+                //   F = (G * m1 * m2) / d^2
+                [force,distance,angle]=Gravity([x1,y1,m1],[moonx,moony,moonmass]);
+                moonangle=angle;
+                // pecah vektor ke X dan Y
+                var fx = -force * Math.cos(angle);
+                var fy = -force * Math.sin(angle);
+                // V = V0 + a
+                moonvx += (fx / moonmass);
+                moonvy += (fy / moonmass);
+                // S = S0 + V
+                moonx += moonvx;
+                moony += moonvy;
+                
+                // karena F ini cukup besar , bumi juga aslinya bergerak
+                // V = V0 + a
+                vx1 -= (fx / m1);
+                vy1 -= (fy / m1);
+                // S = S0 + V
+                x1 += vx1;
+                y1 += vy1;
+            }            
+            
             tidal=[];
             function calculateTidal(){
               // titik tengah earth
@@ -740,30 +768,7 @@
               }
               ctx.stroke();
             }
-            var moonangle=0;
-            function calculateMoon() {
-                // calculate moon gravity to earth
-                //   F = (G * m1 * m2) / d^2
-                [force,distance,angle]=Gravity([x1,y1,m1],[moonx,moony,moonmass]);
-                moonangle=angle;
-                // pecah vektor ke X dan Y
-                var fx = -force * Math.cos(angle);
-                var fy = -force * Math.sin(angle);
-                // V = V0 + a
-                moonvx += (fx / moonmass);
-                moonvy += (fy / moonmass);
-                // S = S0 + V
-                moonx += moonvx;
-                moony += moonvy;
-                
-                // bumi juga aslinya bergerak
-                // V = V0 + a
-                vx1 -= (fx / m1);
-                vy1 -= (fy / m1);
-                // S = S0 + V
-                x1 += vx1;
-                y1 += vy1;
-            }
+
             
             function calculateSun() {
                 // calculate moon gravity to earth
