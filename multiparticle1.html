@@ -11,7 +11,10 @@
 <body><center>
   <div>
     <label for="grav">Gravity value</label>
-    <input type="number" id="grav" value="9" min="0" max=100 step="1">
+    <input type="number" id="grav" value="8" min="0" max=100 step="1">
+    <br>
+    <label for="rest">Restitution</label>
+    <input type="number" id="rest" value=".99" min="0.7" max=1 step="0.001">
     <br>
     Particle Mass-SIze<br>
     <label for="massInput1" style="color:red">Particle 1:</label>
@@ -27,6 +30,54 @@
   </div>  
   <canvas id="canvas" width="700" height="700"></canvas>
   <script>
+    
+    
+    class Vector {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+      }
+
+      magnitude() {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+      }
+
+      normalize() {
+        const magnitude = this.magnitude();
+        this.x /= magnitude;
+        this.y /= magnitude;
+        return this;
+      }
+
+      mult(scalar) {
+        this.x *= scalar;
+        this.y *= scalar;
+        return this;
+      }
+
+      nmult(scalar) {
+        return new Vector(this.x * scalar, this.y * scalar);
+      }
+
+      add(other) {
+        this.x += other.x;
+        this.y += other.y;
+      }
+
+      sub(other) {
+        this.x -= other.x;
+        this.y -= other.y;
+      }
+
+      static dot(a, b) {
+        return a.x * b.x + a.y * b.y;
+      }
+
+      distance(other) {
+        return Math.sqrt(Math.pow(this.x - other.x, 2) + Math.pow(this.y - other.y, 2));
+      }
+    }
+    
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const WID = canvas.width;
@@ -52,6 +103,43 @@
     let scale = 1;
         let momentumValues=[];
         let barmax=0;
+// Define the vertices of the hexagon
+const s=1;
+// Define the U-shaped tube vertices
+const tubeVertices = [
+  new Vector(-100*s, -200*s),          // Top-left corner of left arm
+  new Vector(-100*s, 100*s),          // Top-left corner of left arm
+  new Vector(100*s, 100*s),          // Top-left corner of left arm
+  new Vector(100*s, -200*s),          // Top-left corner of left arm
+
+  new Vector(80*s, -200*s),          // Top-left corner of left arm
+  new Vector(80*s, 60*s),          // Top-left corner of left arm
+  new Vector(-50*s, 60*s),          // Top-left corner of left arm
+  new Vector(-50*s, -200*s)          // Top-left corner of left arm
+];
+
+const hexagonVertices = [
+
+  new Vector( - 50*s,  - 100*s),
+  new Vector( + 50*s,  - 100*s),
+  new Vector( + 100*s, 0),
+  new Vector( + 50*s,  100*s),
+  new Vector(- 50*s, + 100*s),
+  new Vector( - 100*s, 0)
+];
+let thewall=tubeVertices;
+const sp=[-80,-80,10];
+
+function drawHexagon() {
+  ctx.beginPath();
+  ctx.moveTo(thewall[0].x, thewall[0].y);
+  for (let i = 1; i < thewall.length; i++) {
+    ctx.lineTo(thewall[i].x, thewall[i].y);
+  }
+  ctx.closePath();
+  ctx.stroke();
+}
+    let restitution=1;
     function resetSim(){
       const mass1 = parseFloat(document.getElementById('massInput1').value)*20;
       const mass2 = parseFloat(document.getElementById('massInput2').value)*20;
@@ -60,17 +148,19 @@
       const sz2 = parseFloat(document.getElementById('size2').value)*0.5;
       const sz3 = parseFloat(document.getElementById('size3').value)*0.5;
       G = parseFloat(document.getElementById('grav').value)*0.001;
+      restitution = parseFloat(document.getElementById('rest').value);
       barmax=0;
       momentumValues=[];
       particles = [];
+      sp2=sp[2]/2;
       for (let n = 0; n < N_PARTICLES/sz1; n++) {
-        particles.push(new Particle(new Vector(random() * 150 - 75, random() * 150 - 75), sz1, mass1,'#ff0000'));
+        particles.push(new Particle(new Vector(random() * sp[2] - sp2+sp[0], random() * sp[2] -sp2+sp[1]), sz1, mass1,'#ff0000'));
       }
       for (let n = 0; n < N_PARTICLES/sz2; n++) {
-        particles.push(new Particle(new Vector(random() * 150 - 75, random() * 150 - 75), sz2, mass2,'#00ff00'));
+        particles.push(new Particle(new Vector(random() * sp[2] - sp2+sp[0], random() * sp[2] -sp2+sp[1]), sz2, mass2,'#00ff00'));
       }
       for (let n = 0; n < N_PARTICLES/sz3; n++) {
-        particles.push(new Particle(new Vector(random() * 150 - 75, random() * 150 - 75), sz3, mass3,'#0000ff'));
+        particles.push(new Particle(new Vector(random() * sp[2] - sp2+sp[0], random() * sp[2] -sp2+sp[1]), sz3, mass3,'#0000ff'));
       }
     }
     function setup() {
@@ -105,11 +195,14 @@
 
     function onWheel(event) {
       const scaleFactor = 1.1;
+      let oscale=scale;
       if (event.deltaY < 0) {
         scale *= scaleFactor;
       } else {
         scale /= scaleFactor;
       }
+      translateX*=oscale/scale;
+      translateY*=oscale/scale;
     }
 
   function drawHistogram() {
@@ -125,10 +218,9 @@
           ctx.fillRect(xPos, yPos, bar, 18);
       }
   }    
-
     function draw() {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = "rgba(0,50,0,1)";
+      ctx.fillStyle = "rgba(0,50,0,0.4)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.scale(scale, scale);
       ctx.translate(translateX, translateY);
@@ -137,7 +229,8 @@
       ctx.fill();
       for (let j=0;j<10;j++){
       ctx.fillStyle = "rgba(30,30,30,0.1)";
-      ctx.fillRect(EX1, EY1, EX2-EX1, EY2-EY1);
+      //drawHexagon();
+      //ctx.fillRect(EX1, EY1, EX2-EX1, EY2-EY1);
         for (let p of particles) {          
           p.checkCollision(particles);
           p.checkEdges();
@@ -149,6 +242,9 @@
       drawHistogram();
       requestAnimationFrame(draw);
     }
+
+
+
 
     
     class Particle {
@@ -199,7 +295,7 @@
         this.acceleration.y+=G; // gravity down
         this.velocity.add(this.acceleration);
         let v=this.velocity.magnitude();
-        if (v>3)this.velocity.mult(3/v);
+        //if (v>2)this.velocity.mult(2/v);
         this.pos.add(this.velocity);
         this.acceleration.mult(0);
       }
@@ -225,7 +321,7 @@
                       }
 
                       // Calculate restitution
-                      const restitution = 1; // Perfectly elastic collision
+                      //const restitution = 1; // Perfectly elastic collision
 
                       // Calculate impulse scalar
                       let j = -(1 + restitution) * velAlongNormal;
@@ -238,90 +334,50 @@
 
                       // Separate colliding particles
                       const overlap = minDistance - distance;
-                      const separation = normal.nmult(overlap / (this.mass + other.mass));
-                      this.pos.sub(separation.nmult(1 / this.mass));
-                      other.pos.add(separation.nmult(1 / other.mass));
+                      const separation = normal.nmult(overlap );
+                      this.pos.sub(separation.nmult(other.mass/this.mass));
+                      other.pos.add(separation.nmult(this.mass/other.mass));
+                      //this.pos.sub(normal.nmult(overlap));
+                      //other.pos.add(normal.nmult(overlap));
                   }
               }
           }
       }
 
-      checkCollision1(others) {
-        for (let other of others) {
-          if (this != other) {
-            const distance = this.pos.distance(other.pos);
-            const minDistance = this.radius + other.radius;
-
-            if (distance <= minDistance) {
-              const normal = new Vector(other.pos.x - this.pos.x, other.pos.y - this.pos.y).normalize();
-              const relativeVelocity = new Vector(other.velocity.x - this.velocity.x, other.velocity.y - this.velocity.y);
-              const impulse = normal.nmult(2 * Vector.dot(relativeVelocity, normal) / (this.mass + other.mass));
-              const repulsion = normal.nmult(minDistance - distance);
-              
-              this.velocity.add(impulse.nmult(1 / this.mass));
-              other.velocity.sub(impulse.nmult(1 / other.mass));
-
-              this.pos.sub(repulsion.nmult(1 / this.mass));
-              other.pos.add(repulsion.nmult(1 / other.mass));
-            }
-          }
-        }
-      }
-
       display() {
         ctx.fillStyle = this.color;
         ctx.beginPath();
-        ctx.arc(this.pos.x, this.pos.y, this.radius, 0, 2 * Math.PI);
+        ctx.arc(this.pos.x, this.pos.y, this.radius-0.3, 0, 2 * Math.PI);
         ctx.fill();
       }
     }
 
-    class Vector {
-      constructor(x, y) {
-        this.x = x;
-        this.y = y;
-      }
+    
+// Modify the checkEdges method of the Particle class
+Particle.prototype.checkEdges1 = function() {
+  for (let i = 0; i < thewall.length; i++) {
+    const p1 = thewall[i];
+    const p2 = thewall[(i + 1) % thewall.length];
+    const wall = new Vector(p2.x - p1.x, p2.y - p1.y);
+    const particleToVertex = new Vector(this.pos.x - p1.x, this.pos.y - p1.y);
 
-      magnitude() {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
-      }
+    const dotProduct = Vector.dot(wall, particleToVertex);
+    if (dotProduct > 0 && dotProduct < Vector.dot(wall, wall)) {
+      const proj = Vector.dot(wall, particleToVertex) / Vector.dot(wall, wall);
+      const nearestPoint = new Vector(p1.x + proj * (p2.x - p1.x), p1.y + proj * (p2.y - p1.y));
+      const distance = this.pos.distance(nearestPoint);
 
-      normalize() {
-        const magnitude = this.magnitude();
-        this.x /= magnitude;
-        this.y /= magnitude;
-        return this;
-      }
-
-      mult(scalar) {
-        this.x *= scalar;
-        this.y *= scalar;
-        return this;
-      }
-
-      nmult(scalar) {
-        return new Vector(this.x * scalar, this.y * scalar);
-      }
-
-      add(other) {
-        this.x += other.x;
-        this.y += other.y;
-      }
-
-      sub(other) {
-        this.x -= other.x;
-        this.y -= other.y;
-      }
-
-      static dot(a, b) {
-        return a.x * b.x + a.y * b.y;
-      }
-
-      distance(other) {
-        return Math.sqrt(Math.pow(this.x - other.x, 2) + Math.pow(this.y - other.y, 2));
+      if (distance < this.radius) {
+        // Collision detected with this edge, reflect velocity
+        const normal = new Vector(p2.y - p1.y, p1.x - p2.x).normalize();
+        const dotProduct = Vector.dot(this.velocity, normal) * 2;
+        this.velocity.x -= dotProduct * normal.x;
+        this.velocity.y -= dotProduct * normal.y;
+        this.pos.add(this.velocity);
       }
     }
-    
+  }
+}
 
     setup();
     requestAnimationFrame(draw);
